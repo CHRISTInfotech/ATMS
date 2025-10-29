@@ -1,0 +1,265 @@
+{% extends 'admin_base.html' %}
+{% block title %}Manage Roles{% endblock %}
+
+{% block content %}
+<style>
+    .roles-container {
+        background: #f8f9fa;
+        min-height: 100vh;
+        padding: 2rem 0;
+    }
+    
+    .page-header-card {
+        background: #ffffff;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid #e0e0e0;
+    }
+    
+    .page-title {
+        color: #2d3748;
+        font-weight: 600;
+        font-size: 1.75rem;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .page-title i {
+        color: #0d6efd;
+        font-size: 1.5rem;
+    }
+    
+    .table-card {
+        background: #ffffff;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #e0e0e0;
+        padding: 1.5rem;
+    }
+    
+    .roles-table {
+        margin: 0;
+        font-size: 0.9rem;
+        width: 100% !important;
+    }
+    
+    .roles-table thead th {
+        background: #f8f9fa;
+        color: #495057;
+        font-weight: 600;
+        font-size: 0.85rem;
+        padding: 1rem 0.75rem;
+        border-bottom: 2px solid #dee2e6;
+    }
+    
+    .roles-table tbody tr {
+        transition: background 0.2s ease;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .roles-table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .roles-table tbody td {
+        padding: 0.875rem 0.75rem;
+        vertical-align: middle;
+        color: #4a5568;
+    }
+    
+    .user-email {
+        font-weight: 500;
+        color: #2d3748;
+    }
+    
+    .user-username {
+        color: #718096;
+        font-size: 0.95rem;
+    }
+    
+    .role-select {
+        padding: 0.5rem 2rem 0.5rem 0.75rem;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        transition: border-color 0.2s ease;
+        background-color: white;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 0.5rem center;
+        background-size: 12px 10px;
+        appearance: none;
+        cursor: pointer;
+    }
+    
+    .role-select:focus {
+        outline: none;
+        border-color: #0d6efd;
+    }
+    
+    .update-btn {
+        padding: 0.5rem 1.25rem;
+        background: #48bb78;
+        border: none;
+        border-radius: 6px;
+        color: white;
+        font-weight: 500;
+        transition: background 0.2s ease;
+        font-size: 0.875rem;
+    }
+    
+    .update-btn:hover {
+        background: #38a169;
+    }
+    
+    .role-form {
+        display: contents;
+    }
+    
+    /* DataTables custom styling */
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter,
+    .dataTables_wrapper .dataTables_info,
+    .dataTables_wrapper .dataTables_paginate {
+        padding: 0.75rem 0;
+    }
+
+    .dataTables_wrapper .dataTables_length select,
+    .dataTables_wrapper .dataTables_filter input {
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        padding: 0.4rem 0.75rem;
+        margin: 0 0.5rem;
+    }
+
+    .dataTables_wrapper .dataTables_length select {
+        padding-right: 2rem;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 0.5rem center;
+        background-size: 12px 10px;
+        appearance: none;
+    }
+
+    .dataTables_wrapper .dataTables_filter input:focus,
+    .dataTables_wrapper .dataTables_length select:focus {
+        outline: none;
+        border-color: #0d6efd;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        padding: 0.4rem 0.75rem;
+        margin: 0 0.25rem;
+        border-radius: 4px;
+        border: 1px solid #dee2e6;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        background: #0d6efd;
+        color: white !important;
+        border-color: #0d6efd;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        background: #f8f9fa;
+        border-color: #0d6efd;
+    }
+    
+    @media (max-width: 768px) {
+        .page-title {
+            font-size: 1.5rem;
+        }
+        
+        .table-card {
+            padding: 1rem;
+        }
+    }
+</style>
+
+<!-- DataTables CSS -->
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+
+<div class="roles-container">
+    <div class="container">
+        
+        <!-- Header Section -->
+        <div class="page-header-card">
+            <h2 class="page-title">
+                <i class="fa fa-user-shield"></i>
+                Manage User <b>Roles</b>
+            </h2>
+        </div>
+        
+        <!-- Roles Table -->
+        <div class="table-card">
+            <div class="table-responsive">
+                <table class="table table-hover roles-table" id="rolesTable">
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Username</th>
+                            <th>Current Role</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <form method="POST" action="{% url 'accounts:update_user_role_only' user.id %}" class="role-form">
+                                {% csrf_token %}
+                                <td class="user-email">{{ user.email }}</td>
+                                <td class="user-username">{{ user.username }}</td>
+                                <td>
+                                    <select name="role" class="form-select role-select">
+                                        <option value="admin" {% if user.role == "admin" %}selected{% endif %}>Admin</option>
+                                        <option value="hod" {% if user.role == "hod" %}selected{% endif %}>HOD</option>
+                                        <option value="staff" {% if user.role == "staff" %}selected{% endif %}>Staff</option>
+                                        <option value="student" {% if user.role == "student" %}selected{% endif %}>Student</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <button type="submit" class="btn update-btn">
+                                        <i class="fa fa-check me-1"></i>Update
+                                    </button>
+                                </td>
+                            </form>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+<!-- DataTables JS -->
+<script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    // Initialize DataTable
+    $('#rolesTable').DataTable({
+        "pageLength": 10,
+        "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
+        "order": [[0, "asc"]],
+        "columnDefs": [
+            { "orderable": false, "targets": 3 }
+        ],
+        "language": {
+            "search": "Search users:",
+            "lengthMenu": "Show _MENU_ users per page",
+            "info": "Showing _START_ to _END_ of _TOTAL_ users",
+            "infoEmpty": "No users available",
+            "infoFiltered": "(filtered from _MAX_ total users)",
+            "zeroRecords": "No matching users found"
+        }
+    });
+});
+</script>
+{% endblock %}

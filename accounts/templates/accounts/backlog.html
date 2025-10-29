@@ -1,0 +1,651 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Backlog - {{ current_project.name|default:"Projects" }}{% endblock %}
+
+{% block content %}
+<style>
+:root {
+    --jira-blue: #0052cc;
+    --jira-blue-light: #deebff;
+    --jira-gray-100: #f4f5f7;
+    --jira-gray-200: #ebecf0;
+    --jira-gray-300: #dfe1e6;
+    --jira-gray-700: #5e6c84;
+    --jira-gray-900: #172b4d;
+    --shadow-sm: 0 1px 2px rgba(9,30,66,0.25);
+    --shadow-md: 0 4px 8px rgba(9,30,66,0.15);
+}
+
+body {
+    background-color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+}
+
+/* Header Section */
+.backlog-header {
+    background-color: #fff;
+    border-bottom: 2px solid var(--jira-gray-200);
+    padding: 16px 24px;
+    margin-bottom: 0;
+}
+
+.project-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--jira-gray-700);
+    margin-bottom: 12px;
+}
+
+.project-breadcrumb .separator {
+    color: var(--jira-gray-300);
+}
+
+.project-name {
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--jira-gray-900);
+    margin: 0;
+}
+
+/* Navigation Tabs */
+.backlog-nav {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--jira-gray-200);
+    padding: 0 24px;
+    background-color: #fff;
+    margin-bottom: 16px;
+}
+
+.backlog-nav-item {
+    padding: 12px 16px;
+    color: var(--jira-gray-700);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s;
+}
+
+.backlog-nav-item:hover {
+    color: var(--jira-blue);
+    background-color: var(--jira-gray-100);
+}
+
+.backlog-nav-item.active {
+    color: var(--jira-blue);
+    border-bottom-color: var(--jira-blue);
+}
+
+/* Toolbar */
+.backlog-toolbar {
+    padding: 16px 24px;
+    background-color: #fff;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.search-wrapper {
+    position: relative;
+    flex: 1;
+    min-width: 250px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 8px 12px 8px 36px;
+    border: 2px solid var(--jira-gray-300);
+    border-radius: 3px;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--jira-blue);
+    box-shadow: 0 0 0 1px var(--jira-blue);
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--jira-gray-700);
+}
+
+.filter-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.filter-btn, .project-select {
+    padding: 8px 12px;
+    border: 2px solid var(--jira-gray-300);
+    border-radius: 3px;
+    font-size: 14px;
+    background-color: #fff;
+    color: var(--jira-gray-700);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-btn:hover, .project-select:hover {
+    background-color: var(--jira-gray-100);
+    border-color: var(--jira-gray-700);
+}
+
+.filter-dropdown {
+    min-width: 220px;
+    padding: 16px;
+    border: none;
+    border-radius: 3px;
+    box-shadow: var(--shadow-md);
+}
+
+.filter-section {
+    margin-bottom: 16px;
+}
+
+.filter-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--jira-gray-700);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    display: block;
+}
+
+.filter-select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 2px solid var(--jira-gray-300);
+    border-radius: 3px;
+    font-size: 14px;
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: var(--jira-blue);
+    box-shadow: 0 0 0 1px var(--jira-blue);
+}
+
+.apply-filters-btn {
+    width: 100%;
+    padding: 8px 16px;
+    background-color: var(--jira-blue);
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.apply-filters-btn:hover {
+    background-color: #0065ff;
+}
+
+/* Priority Legend */
+.priority-legend {
+    padding: 12px 24px;
+    background-color: var(--jira-gray-100);
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    border-top: 1px solid var(--jira-gray-200);
+    border-bottom: 1px solid var(--jira-gray-200);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--jira-gray-700);
+}
+
+.legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+}
+
+.legend-high { background-color: #de350b; }
+.legend-medium { background-color: #ff991f; }
+.legend-low { background-color: #00875a; }
+.legend-none { background-color: var(--jira-gray-700); }
+
+/* Backlog Content */
+.backlog-content {
+    padding: 24px;
+}
+
+/* Task Item */
+.task-item {
+    background-color: #fff;
+    border: 1px solid var(--jira-gray-300);
+    border-radius: 3px;
+    padding: 16px;
+    margin-bottom: 8px;
+    transition: all 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.task-item:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--jira-gray-700);
+}
+
+.task-item-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+}
+
+.task-priority-indicator {
+    width: 4px;
+    height: 48px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.priority-high-indicator { background-color: #de350b; }
+.priority-medium-indicator { background-color: #ff991f; }
+.priority-low-indicator { background-color: #00875a; }
+.priority-none-indicator { background-color: var(--jira-gray-300); }
+
+.task-details {
+    flex: 1;
+}
+
+.task-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.task-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--jira-gray-900);
+    margin: 0;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.task-title:hover {
+    color: var(--jira-blue);
+}
+
+.task-project-badge {
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.project-high { background-color: #ffebe6; color: #de350b; }
+.project-medium { background-color: #fff4e6; color: #ff991f; }
+.project-low { background-color: #e3fcef; color: #00875a; }
+.project-none { background-color: var(--jira-gray-200); color: var(--jira-gray-700); }
+
+.task-meta-info {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.task-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--jira-gray-700);
+}
+
+.task-meta-icon {
+    color: var(--jira-gray-700);
+}
+
+.task-due-date {
+    color: #de350b !important;
+    font-weight: 500;
+}
+
+.task-item-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.task-status-badge {
+    padding: 4px 10px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.status-todo { background-color: var(--jira-gray-200); color: var(--jira-gray-700); }
+.status-in-progress { background-color: var(--jira-blue-light); color: var(--jira-blue); }
+.status-in-review { background-color: #fff4e6; color: #ff991f; }
+.status-done { background-color: #e3fcef; color: #00875a; }
+
+.task-actions-btn {
+    background: none;
+    border: none;
+    padding: 6px 10px;
+    color: var(--jira-gray-700);
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background-color 0.2s;
+}
+
+.task-actions-btn:hover {
+    background-color: var(--jira-gray-200);
+}
+
+.task-dropdown-menu {
+    border: none;
+    border-radius: 3px;
+    box-shadow: var(--shadow-md);
+    padding: 4px 0;
+}
+
+.task-dropdown-item {
+    padding: 8px 16px;
+    font-size: 14px;
+    color: var(--jira-gray-900);
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.task-dropdown-item:hover {
+    background-color: var(--jira-gray-100);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 80px 24px;
+    color: var(--jira-gray-700);
+}
+
+.empty-state-icon {
+    font-size: 64px;
+    color: var(--jira-gray-300);
+    margin-bottom: 16px;
+}
+
+.empty-state-title {
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--jira-gray-900);
+    margin-bottom: 8px;
+}
+
+.empty-state-text {
+    font-size: 14px;
+    color: var(--jira-gray-700);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .task-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .task-item-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .filter-controls {
+        width: 100%;
+    }
+    
+    .filter-btn, .project-select {
+        flex: 1;
+    }
+}
+</style>
+
+<!-- Header -->
+    <!-- Page Header -->
+    <div class="d-flex align-items-center mb-4">
+        <h5 class="fw-bold mb-0 me-2">Project/Event</h5>
+        <i class="fas fa-chevron-right text-muted"></i>
+        <h5 class="fw-bold mb-0 ms-2 text-primary">
+            {% if current_project %}
+                {{ current_project.name }}
+            {% else %}
+                All Projects
+            {% endif %}
+        </h5>
+    </div>
+
+<!-- Navigation Tabs -->
+<div class="backlog-nav">
+    {% if request.user.role == 'hod' %}
+    <a class="backlog-nav-item {% if request.resolver_match.url_name == 'hod_dashboard' %}active{% endif %}" 
+       href="{% url 'accounts:hod_dashboard' %}?project={{ current_project.id }}">
+        Summary
+    </a>
+    {% else %}
+    <a class="backlog-nav-item {% if request.resolver_match.url_name == 'staff_dashboard' %}active{% endif %}" 
+       href="{% url 'accounts:staff_dashboard' %}?project={{ current_project.id }}">
+        Summary
+    </a>
+    {% endif %}
+    <a class="backlog-nav-item {% if request.resolver_match.url_name == 'backlog_page' %}active{% endif %}" 
+       href="{% url 'accounts:backlog_page' %}?project={{ current_project.id }}">
+        Backlog
+    </a>
+    <a class="backlog-nav-item {% if request.resolver_match.url_name == 'board_page' %}active{% endif %}" 
+       href="{% url 'accounts:board_page' %}?project={{ current_project.id }}">
+        Board
+    </a>
+</div>
+
+<!-- Toolbar -->
+<form method="get">
+    <div class="backlog-toolbar">
+        <div class="search-wrapper">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" name="q" placeholder="Search tasks..." value="{{ request.GET.q }}" class="search-input">
+        </div>
+
+        <div class="filter-controls">
+            <!-- Filter Dropdown -->
+            <div class="dropdown">
+                <button class="filter-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-filter"></i>
+                    <span>Filter</span>
+                </button>
+                <div class="dropdown-menu filter-dropdown">
+                    <div class="filter-section">
+                        <label class="filter-label">Status</label>
+                        <select name="status" class="filter-select">
+                            <option value="">All Statuses</option>
+                            {% for value, display in tasks.model.STATUS_CHOICES %}
+                            <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>
+                                {{ display }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="filter-section">
+                        <label class="filter-label">Priority</label>
+                        <select name="priority" class="filter-select">
+                            <option value="">All Priorities</option>
+                            <option value="high" {% if request.GET.priority == "high" %}selected{% endif %}>High</option>
+                            <option value="medium" {% if request.GET.priority == "medium" %}selected{% endif %}>Medium</option>
+                            <option value="low" {% if request.GET.priority == "low" %}selected{% endif %}>Low</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="apply-filters-btn">Apply Filters</button>
+                </div>
+            </div>
+
+            <!-- Project Filter -->
+            <select name="project" class="project-select" onchange="this.form.submit()">
+                <option value="">All Projects</option>
+                {% for project in projects %}
+                    <option value="{{ project.id }}" {% if selected_project and selected_project.id == project.id %}selected{% endif %}>
+                        {{ project.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+</form>
+
+<!-- Priority Legend -->
+<div class="priority-legend">
+    <div class="legend-item">
+        <div class="legend-dot legend-high"></div>
+        <span>High Priority</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-dot legend-medium"></div>
+        <span>Medium Priority</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-dot legend-low"></div>
+        <span>Low Priority</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-dot legend-none"></div>
+        <span>No Priority</span>
+    </div>
+</div>
+
+<!-- Backlog Content -->
+<div class="backlog-content">
+    {% for task in tasks %}
+    <div class="task-item">
+        <div class="task-item-left">
+            <!-- Priority Indicator -->
+            <div class="task-priority-indicator 
+                {% if task.priority == 'high' %}priority-high-indicator
+                {% elif task.priority == 'medium' %}priority-medium-indicator
+                {% elif task.priority == 'low' %}priority-low-indicator
+                {% else %}priority-none-indicator
+                {% endif %}">
+            </div>
+
+            <!-- Task Details -->
+            <div class="task-details">
+                <div class="task-header">
+                    <h6 class="task-title">{{ task.title }}</h6>
+                    <span class="task-project-badge 
+                        {% if task.priority == 'high' %}project-high
+                        {% elif task.priority == 'medium' %}project-medium
+                        {% elif task.priority == 'low' %}project-low
+                        {% else %}project-none
+                        {% endif %}">
+                        {% if task.project %}{{ task.project.name }}{% else %}No Project{% endif %}
+                    </span>
+                </div>
+
+                <div class="task-meta-info">
+                    <!-- Assigned To -->
+                    <div class="task-meta-item">
+                        <i class="fas fa-user task-meta-icon"></i>
+                        <span>{{ task.assigned_to.get_full_name|default:task.assigned_to.username }}</span>
+                    </div>
+
+                    <!-- Team -->
+                    {% if task.team %}
+                    <div class="task-meta-item">
+                        <i class="fas fa-users task-meta-icon"></i>
+                        <span>{{ task.team.name }}</span>
+                    </div>
+                    {% endif %}
+
+                    <!-- Due Date -->
+                    {% if task.due_date %}
+                    <div class="task-meta-item task-due-date">
+                        <i class="far fa-calendar task-meta-icon"></i>
+                        <span>Due {{ task.due_date|date:"M d, Y" }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="task-item-right">
+            <!-- Status Badge -->
+            <span class="task-status-badge 
+                {% if task.status == 'done' %}status-done
+                {% elif task.status == 'in_review' %}status-in-review
+                {% elif task.status == 'in_progress' %}status-in-progress
+                {% else %}status-todo
+                {% endif %}">
+                {{ task.get_status_display }}
+            </span>
+
+            <!-- Actions Dropdown -->
+            {% if request.user.role != 'student' %}
+            <div class="dropdown">
+                <button class="task-actions-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-ellipsis-h"></i>
+                </button>
+                <ul class="dropdown-menu task-dropdown-menu dropdown-menu-end">
+                    {% for status_value, status_name in task.STATUS_CHOICES %}
+                        {% if status_value != task.status %}
+                        <li>
+                            <form action="{% url 'accounts:update_task_status' %}" method="post" class="m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="task_id" value="{{ task.id }}">
+                                <input type="hidden" name="new_status" value="{{ status_value }}">
+                                <button type="submit" class="task-dropdown-item">
+                                    Move to {{ status_name }}
+                                </button>
+                            </form>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% empty %}
+    <div class="empty-state">
+        <div class="empty-state-icon">
+            <i class="fas fa-tasks"></i>
+        </div>
+        <h3 class="empty-state-title">No tasks in backlog</h3>
+        <p class="empty-state-text">Create tasks to get started with your project</p>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

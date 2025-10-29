@@ -1,0 +1,11 @@
+<!-- accounts/templates/accounts/hod_register.html -->
+{% extends "accounts/base.html" %}
+{% block title %}HOD Registration{% endblock %}
+{% block content %}
+<h2>HOD Registration</h2>
+<form method="POST">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Register</button>
+</form>
+{% endblock %}

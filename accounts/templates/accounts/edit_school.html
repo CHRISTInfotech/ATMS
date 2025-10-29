@@ -1,0 +1,32 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}Edit School{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="card mb-4">
+    <div class="card-header">Edit School</div>
+    <div class="card-body">
+      <form method="POST" action="">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label for="schoolName" class="form-label">School Name</label>
+          <input type="text" name="name" class="form-control" value="{{ school.name }}" required>
+        </div>
+        <div class="mb-3">
+          <label for="campusSelect" class="form-label">Select Campus</label>
+          <select name="campus" class="form-select" required>
+            {% for campus in campuses %}
+              <option value="{{ campus.id }}" {% if campus.id == school.campus.id %}selected{% endif %}>
+                {{ campus.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="btn btn-success btn-sm">Update School</button>
+        <a href="{% url 'accounts:school_crud' %}" class="btn btn-secondary btn-sm">Cancel</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

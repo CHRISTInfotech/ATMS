@@ -1,0 +1,344 @@
+{% extends "accounts/base.html" %}
+{% load static %}
+{% load socialaccount %}
+
+{% block content %}
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  .login-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: white;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 20px;
+  }
+
+  .login-container {
+    display: flex;
+    width: 100%;
+    max-width: 1000px;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    background: white;
+  }
+
+  .left-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 40px;
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    text-align: center;
+    position: relative;
+  }
+
+  .left-panel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="2" fill="white" opacity="0.1"/></svg>');
+    opacity: 0.3;
+  }
+
+  .left-panel-content {
+    position: relative;
+    z-index: 1;
+  }
+
+  .left-panel h2 {
+    font-weight: 700;
+    font-size: 2.5rem;
+    line-height: 1.3;
+    margin-bottom: 30px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  }
+
+  .left-panel-image {
+    max-width: 100%;
+    height: auto;
+    filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.2));
+  }
+
+  .right-panel {
+    flex: 1;
+    padding: 60px 50px;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .logo-container {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .logo-image {
+    width: 70px;
+    height: auto;
+    margin-bottom: 15px;
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .logo-text {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 3rem;
+    margin: 0;
+  }
+
+  .logo-text .at {
+    color: #1e293b;
+  }
+
+  .logo-text .ms {
+    color: #007bff;
+  }
+
+  .welcome-text {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+
+  .welcome-text h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 8px;
+  }
+
+  .welcome-text p {
+    color: #64748b;
+    font-size: 0.95rem;
+  }
+
+  .alert-error {
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    text-align: center;
+    font-size: 0.9rem;
+  }
+
+  .google-login-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 14px 20px;
+    margin-bottom: 25px;
+    border-radius: 10px;
+    cursor: pointer;
+    text-decoration: none;
+    border: 2px solid #e2e8f0;
+    background: white;
+    font-weight: 500;
+    color: #1e293b;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .google-login-btn:hover {
+    border-color: #007bff;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
+    transform: translateY(-2px);
+  }
+
+  .google-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 25px 0;
+  }
+
+  .divider::before,
+  .divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .divider span {
+    padding: 0 15px;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .feature-list {
+    margin-top: 30px;
+    text-align: left;
+  }
+
+  .feature-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 15px;
+    color: white;
+  }
+
+  .feature-icon {
+    width: 24px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .feature-icon svg {
+    width: 14px;
+    height: 14px;
+    fill: white;
+  }
+
+  .feature-text {
+    font-size: 0.95rem;
+    font-weight: 400;
+  }
+
+  .footer-text {
+    text-align: center;
+    margin-top: 30px;
+    color: #64748b;
+    font-size: 0.85rem;
+  }
+
+  @media (max-width: 768px) {
+    .login-container {
+      flex-direction: column;
+      max-width: 500px;
+    }
+
+    .left-panel {
+      padding: 40px 30px;
+    }
+
+    .left-panel h2 {
+      font-size: 2rem;
+    }
+
+    .right-panel {
+      padding: 40px 30px;
+    }
+
+    .logo-text {
+      font-size: 2.5rem;
+    }
+
+    .feature-list {
+      display: none;
+    }
+  }
+</style>
+
+<div class="login-wrapper">
+  <div class="login-container">
+    
+    <!-- Left Panel -->
+    <div class="left-panel">
+      <div class="left-panel-content">
+        <h2>Your Academic<br>Tasks, Organized.</h2>
+        <img src="{% static 'accounts/images/node-11.png' %}" alt="Decorative Illustration" class="left-panel-image">
+        
+        <div class="feature-list">
+          <div class="feature-item">
+            <div class="feature-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+                <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
+              </svg>
+            </div>
+            <span class="feature-text">Manage assignments effortlessly</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+                <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
+              </svg>
+            </div>
+            <span class="feature-text">Track deadlines in real-time</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+                <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
+              </svg>
+            </div>
+            <span class="feature-text">Collaborate with your team</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel -->
+    <div class="right-panel">
+      <div class="logo-container">
+        <img src="{% static 'accounts/images/group-481747-1-19.png' %}" alt="Students Logo" class="logo-image">
+        <p class="logo-text">
+          <span class="at">AT</span><span class="ms">MS</span>
+        </p>
+      </div>
+
+      <div class="welcome-text">
+        <h3>Welcome Back!</h3>
+        <p>Sign in to continue to your dashboard</p>
+      </div>
+
+      {% if form.errors %}
+        <div class="alert-error">
+          Please enter a correct username and password.
+        </div>
+      {% endif %}
+
+      <a href="{% provider_login_url 'google' %}" class="google-login-btn">
+        <img src="{% static 'accounts/images/google-logo.svg' %}" alt="Google logo" class="google-icon">
+        <span>Continue with Google</span>
+      </a>
+
+      <div class="divider">
+        <span>Secure login powered by Google</span>
+      </div>
+
+      <div class="footer-text">
+        By continuing, you agree to our Terms of Service and Privacy Policy
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+{% load time_extras %}
+
+{% block title %}Student Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Project Header -->
+    <div class="d-flex align-items-center mb-4">
+        <h5 class="fw-bold mb-0 me-2">Projects</h5>
+        <i class="fas fa-chevron-right text-muted"></i>
+        <h5 class="fw-bold mb-0 ms-2 text-primary">Hackathon</h5>
+        <div class="ms-3">
+            <i class="fas fa-users me-2"></i>
+            <i class="fas fa-ellipsis-h"></i>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == 'summary' %}active{% endif %}" 
+               href="{% url 'accounts:student_dashboard' %}">Summary</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == 'backlog' %}active{% endif %}" 
+               href="{% url 'accounts:backlog_page' %}">Backlog</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == 'board' %}active{% endif %}" 
+               href="{% url 'accounts:board_page' %}">Board</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == 'timeline' %}active{% endif %}" 
+               href="{% url 'accounts:timeline_page' %}">Timeline</a>
+        </li>
+    </ul>
+
+    <!-- Status Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card p-3 shadow-sm d-flex align-items-center">
+                <i class="fas fa-clipboard-check fs-4 mb-2 text-success"></i>
+                <h5 class="card-title text-success mb-0">{{ completed_count }} Completed</h5>
+                <p class="card-text text-muted">in last 7 days</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 shadow-sm d-flex align-items-center">
+                <i class="fas fa-sync fs-4 mb-2 text-primary"></i>
+                <h5 class="card-title text-primary mb-0">{{ updated_count }} Updated</h5>
+                <p class="card-text text-muted">in last 7 days</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 shadow-sm d-flex align-items-center">
+                <i class="fas fa-spinner fs-4 mb-2 text-info"></i>
+                <h5 class="card-title text-info mb-0">{{ in_progress_count }} In Progress</h5>
+                <p class="card-text text-muted">currently ongoing</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 shadow-sm d-flex align-items-center">
+                <i class="fas fa-plus-circle fs-4 mb-2 text-warning"></i>
+                <h5 class="card-title text-warning mb-0">{{ created_count }} Created</h5>
+                <p class="card-text text-muted">in last 7 days</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 shadow-sm d-flex align-items-center">
+                <i class="fas fa-calendar-times fs-4 mb-2 text-danger"></i>
+                <h5 class="card-title text-danger mb-0">{{ due_soon_count }} due soon</h5>
+                <p class="card-text text-muted">in next 7 days</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Row -->
+    <div class="row g-4">
+        <!-- Status Overview Chart -->
+        <div class="col-lg-5">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Status Overview</h5>
+                    <p class="card-text text-muted">Get a snapshot of the status of your work items.</p>
+                    <hr>
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <canvas id="statusChart" style="max-width:150px;"></canvas>
+                            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+                            <script>
+                                var ctx = document.getElementById('statusChart').getContext('2d');
+                                var statusChart = new Chart(ctx, {
+                                    type: 'doughnut',
+                                    data: {
+                                        labels: ['To Do', 'In Progress', 'Done'],
+                                        datasets: [{
+                                            data: [{{ todo_count }}, {{ in_progress_count }}, {{ done_count }}],
+                                            backgroundColor: ['#ffc107', '#0d6efd', '#198754']
+                                        }]
+                                    },
+                                    options: {
+                                        responsive: true,
+                                        plugins: { legend: { display: false } }
+                                    }
+                                });
+                            </script>
+                        </div>
+                        <div>
+                            <p class="fw-bold mb-1">To Do: {{ todo_count }}</p>
+                            <p class="fw-bold mb-1">In Progress: {{ in_progress_count }}</p>
+                            <p class="fw-bold">Total Work Items: {{ todo_count|add:in_progress_count|add:done_count }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tasks Kanban -->
+        <div class="col-lg-7">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Tasks</h5>
+                    <p class="card-text text-muted">Manage your tasks below.</p>
+                    <hr>
+
+                    <div class="row">
+                        <!-- To Do Column -->
+                        <div class="col-md-4">
+                            <h6>To Do</h6>
+                            {% for task in kanban_tasks.to_do %}
+                            <div class="card mb-2 p-2">
+                                <h6>{{ task.title }}</h6>
+                                <p>{{ task.description }}</p>
+                                <a href="{% url 'accounts:start_task_timer' task.id %}" class="btn btn-success btn-sm">Start</a>
+                            </div>
+                            {% empty %}
+                            <p class="text-muted">No tasks</p>
+                            {% endfor %}
+                        </div>
+
+                        <!-- In Progress Column -->
+                        <div class="col-md-4">
+                            <h6>In Progress</h6>
+                            {% for task in kanban_tasks.in_progress %}
+                            <div class="card mb-2 p-2">
+                                <h6>{{ task.title }}</h6>
+                                <p>{{ task.description }}</p>
+                                <a href="{% url 'accounts:stop_task_timer' task.id %}" class="btn btn-danger btn-sm">Stop</a>
+                            </div>
+                            {% empty %}
+                            <p class="text-muted">No tasks</p>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Done Column -->
+                        <div class="col-md-4">
+                            <h6>Done</h6>
+                            {% for task in kanban_tasks.done %}
+                            <div class="card mb-2 p-2">
+                                <h6>{{ task.title }}</h6>
+                                <p>{{ task.description }}</p>
+                                <p class="mb-1"><strong>Total Time:</strong> {{ task.total_time|format_duration }}</p>
+                                <span class="badge bg-success">Completed</span>
+                            </div>
+                            {% empty %}
+                            <p class="text-muted">No tasks</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

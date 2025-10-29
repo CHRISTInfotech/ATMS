@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Staff Dashboard - ATMS{% endblock %}
+
+{% block content %}
+    <div class="d-flex align-items-center mb-4">
+        <h4 class="mb-0 me-3">Hackathon</h4>
+        <div class="btn-group me-3">
+            <button class="btn btn-outline-secondary btn-sm"><i class="fas fa-user-group"></i></button>
+            <button class="btn btn-outline-secondary btn-sm"><i class="fas fa-ellipsis-h"></i></button>
+        </div>
+    </div>
+
+    <div class="board-header-menu d-flex mb-4">
+        <a href="#">Summary</a>
+        <a href="#">Backlog</a>
+        <a href="#" class="active">Board</a>
+        <a href="#">Timeline</a>
+        <div class="ms-auto d-flex align-items-center">
+            <input type="text" class="form-control form-control-sm me-2" placeholder="Search Board">
+            <button class="btn btn-outline-secondary btn-sm">Filter</button>
+        </div>
+    </div>
+
+    <div class="board">
+        {% for status, tasks in kanban_tasks.items %}
+        <div class="kanban-column">
+            <h6 class="kanban-column-header {{ status|lower|cut:' ' }}">{{ status|title }} ({{ tasks|length }})</h6>
+            <a href="#" class="d-flex align-items-center text-decoration-none mb-3">
+                <i class="fas fa-plus me-2"></i> Add Task
+            </a>
+            {% for task in tasks %}
+            <div class="task-card">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="task-title">{{ task.title }}</span>
+                    <i class="fas fa-ellipsis-h text-muted"></i>
+                </div>
+                <p class="task-meta mb-1">Assigned to: <span class="fw-bold">{{ task.assigned_to.username }}</span></p>
+                <p class="task-meta mb-1">Due: {{ task.due_date|date:"M d, Y"|default:"N/A" }}</p>
+            </div>
+            {% empty %}
+            <div class="task-card text-center text-muted">
+                <i class="fas fa-check-circle mb-2"></i> No tasks here.
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+{% endblock %}
+
+{% block modals %}
+<div class="modal fade" id="createTaskModal" tabindex="-1" aria-labelledby="createTaskLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{% url 'accounts:staff_dashboard' %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createTaskLabel">Assign New Task</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">{{ task_form.as_p }}</div>
+                <div class="modal-footer">
+                    <button type="submit" name="create_task" class="btn btn-primary">Assign Task</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

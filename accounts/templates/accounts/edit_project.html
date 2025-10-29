@@ -1,0 +1,16 @@
+{% extends 'hod_base.html' %}
+{% block content %}
+<h3>Edit Project</h3>
+<form method="POST">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label class="form-label">Project Name</label>
+        <input type="text" name="project_name" class="form-control" value="{{ project.name }}" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Description</label>
+        <textarea name="project_description" class="form-control">{{ project.description }}</textarea>
+    </div>
+    <button type="submit" class="btn btn-success">Update Project</button>
+</form>
+{% endblock %}

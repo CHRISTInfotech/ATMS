@@ -1,0 +1,226 @@
+{% extends 'hod_base.html' %}
+{% load static %}
+
+{% block title %}Manage Projects{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <div class="row mb-3">
+        <div class="col-sm-6">
+            <h2>Manage <b>Projects & Tasks</b></h2>
+        </div>
+        <div class="col-sm-6 text-end">
+            <button class="btn btn-success btn-sm" data-bs-toggle="collapse" data-bs-target="#addProjectForm">
+                <i class="fa fa-plus me-1"></i> Add Project
+            </button>
+        </div>
+    </div>
+
+    <!-- Add Project Form -->
+    <div class="collapse mb-4" id="addProjectForm">
+        <div class="card">
+            <div class="card-header">Add New Project & Task</div>
+            <div class="card-body">
+                <form method="POST" action="{% url 'accounts:hod_projects' %}">
+                    {% csrf_token %}
+                    <div class="row g-3 align-items-end">
+
+                        <div class="col-md-4">
+                            <label class="form-label">Project Name</label>
+                            <input type="text" name="project_name" class="form-control" placeholder="Enter project name" required>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Task Name</label>
+                            <input type="text" name="task_name" class="form-control" placeholder="Enter task name" required>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Deadline</label>
+                            <input type="date" name="deadline" class="form-control" required>
+                        </div>
+
+                        <!-- Campus / School / Department (restricted to HOD) -->
+                        <div class="col-md-3">
+                            <label class="form-label">Campus</label>
+                            <select name="campus" id="projectCampusSelect" class="form-select" required>
+                                {% for campus in campuses %}
+                                    <option value="{{ campus.id }}">{{ campus.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">School</label>
+                            <select name="school" id="projectSchoolSelect" class="form-select" required>
+                                {% for school in schools %}
+                                    <option value="{{ school.id }}" data-campus="{{ school.campus.id }}">{{ school.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Department</label>
+                            <select name="department" id="projectDepartmentSelect" class="form-select" required>
+                                {% for department in departments %}
+                                    <option value="{{ department.id }}" data-school="{{ department.school.id }}">{{ department.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Assign Staff -->
+                        <div class="col-md-3">
+                            <label class="form-label">Assign Staff</label>
+                            <select name="assigned_staff" id="projectStaffSelect" class="form-select" required>
+                                {% for s in staff %}
+                                    <option value="{{ s.id }}" data-department="{{ s.department.first.id }}">{{ s.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select" required>
+                                <option value="to_do">To Do</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="in_review">In Review</option>
+                                <option value="done">Done</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-1">
+                            <button type="submit" class="btn btn-success">Add</button>
+                        </div>
+
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Existing Projects Table -->
+    {% if projects %}
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Project Name</th>
+                    <th>Task</th>
+                    <th>Assigned Staff</th>
+                    <th>Deadline</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for project in projects %}
+                    {% if project.tasks.exists %}
+                        {% for task in project.tasks.all %}
+                        <tr data-task-id="{{ task.id }}">
+                            <form method="POST" action="{% url 'accounts:update_task' task.id %}">
+                                {% csrf_token %}
+                                <td>
+                                    <span class="display-text">{{ project.name }}</span>
+                                    <input type="text" name="project_name" class="form-control editable-field d-none" value="{{ project.name }}">
+                                </td>
+                                <td>
+                                    <span class="display-text">{{ task.title }}</span>
+                                    <input type="text" name="task_name" class="form-control editable-field d-none" value="{{ task.title }}">
+                                </td>
+                                <td>
+                                    <span class="display-text">{{ task.assigned_to.username }}</span>
+                                    <select name="assigned_staff" class="form-select editable-field d-none">
+                                        {% for s in staff %}
+                                            <option value="{{ s.id }}" {% if task.assigned_to.id == s.id %}selected{% endif %}>{{ s.username }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td>
+                                    <span class="display-text">{{ task.due_date|date:'Y-m-d' }}</span>
+                                    <input type="date" name="deadline" class="form-control editable-field d-none" value="{{ task.due_date|date:'Y-m-d' }}">
+                                </td>
+                                <td>
+                                    <span class="display-text">{{ task.status|title }}</span>
+                                    <select name="status" class="form-select editable-field d-none">
+                                        <option value="to_do" {% if task.status == "to_do" %}selected{% endif %}>To Do</option>
+                                        <option value="in_progress" {% if task.status == "in_progress" %}selected{% endif %}>In Progress</option>
+                                        <option value="in_review" {% if task.status == "in_review" %}selected{% endif %}>In Review</option>
+                                        <option value="done" {% if task.status == "done" %}selected{% endif %}>Done</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-primary btn-sm edit-btn">Edit</button>
+                                        <button type="submit" class="btn btn-success btn-sm update-btn d-none">Update</button>
+                                        <a href="{% url 'accounts:delete_task' task.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this task?');">Delete</a>
+                                    </div>
+                                </td>
+                            </form>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td>{{ project.name }}</td>
+                            <td colspan="5" class="text-center text-muted">No tasks added</td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <p class="text-muted">No projects found.</p>
+    {% endif %}
+
+</div>
+
+<!-- JS -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inline edit/update table
+    const editButtons = document.querySelectorAll('.edit-btn');
+    editButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const row = button.closest('tr');
+            row.querySelectorAll('.display-text').forEach(el => el.classList.add('d-none'));
+            row.querySelectorAll('.editable-field').forEach(el => el.classList.remove('d-none'));
+            button.classList.add('d-none');
+            row.querySelector('.update-btn').classList.remove('d-none');
+        });
+    });
+
+    // Cascading selects (restricted to HOD)
+    const campusSelect = document.getElementById("projectCampusSelect");
+    const schoolSelect = document.getElementById("projectSchoolSelect");
+    const departmentSelect = document.getElementById("projectDepartmentSelect");
+    const staffSelect = document.getElementById("projectStaffSelect");
+
+    const schoolOptions = Array.from(schoolSelect.options).filter(o => o.value !== '');
+    const deptOptions = Array.from(departmentSelect.options).filter(o => o.value !== '');
+    const staffOptions = Array.from(staffSelect.options).filter(o => o.value !== '');
+
+    campusSelect.addEventListener("change", () => {
+        const cid = campusSelect.value;
+        schoolSelect.innerHTML = '<option value="">Select School</option>';
+        schoolOptions.forEach(o => { if(o.dataset.campus === cid) schoolSelect.appendChild(o.cloneNode(true)); });
+        departmentSelect.innerHTML = '<option value="">Select Department</option>';
+        staffSelect.innerHTML = '<option value="">Select Staff</option>';
+    });
+
+    schoolSelect.addEventListener("change", () => {
+        const sid = schoolSelect.value;
+        departmentSelect.innerHTML = '<option value="">Select Department</option>';
+        deptOptions.forEach(o => { if(o.dataset.school === sid) departmentSelect.appendChild(o.cloneNode(true)); });
+        staffSelect.innerHTML = '<option value="">Select Staff</option>';
+    });
+
+    departmentSelect.addEventListener("change", () => {
+        const did = departmentSelect.value;
+        staffSelect.innerHTML = '<option value="">Select Staff</option>';
+        staffOptions.forEach(o => { if(o.dataset.department === did) staffSelect.appendChild(o.cloneNode(true)); });
+    });
+});
+</script>
+
+{% endblock %}

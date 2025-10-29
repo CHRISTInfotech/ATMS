@@ -1,0 +1,8 @@
+{% extends "accounts/base.html" %}
+{% block content %}
+<div class="container">
+    <h2 style="color: red;">Your email is not registered!</h2>
+    <p>Please contact the admin .</p>
+    <a href="{% url 'accounts:login' %}" class="btn btn-primary">Go to Login</a>
+</div>
+{% endblock %}

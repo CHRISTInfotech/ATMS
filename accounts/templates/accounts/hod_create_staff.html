@@ -1,0 +1,62 @@
+{% extends 'hod_base.html' %}
+
+{% block title %}Add New Staff{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Add New Staff</h2>
+    <form method="POST">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label>Email</label>
+            <input type="email" name="email" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label>Emp ID</label>
+            <input type="text" name="emp_id" class="form-control">
+        </div>
+        <div class="mb-3">
+            <label>Phone</label>
+            <input type="text" name="phone_number" class="form-control">
+        </div>
+        <div class="mb-3">
+            <label>Gender</label>
+            <select name="gender" class="form-select">
+                <option value="">-</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label>Campus</label>
+            <select name="campus" class="form-select">
+                <option value="">-</option>
+                {% for campus in campuses %}
+                    <option value="{{ campus.id }}">{{ campus.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label>School</label>
+            <select name="school" class="form-select">
+                <option value="">-</option>
+                {% for school in schools %}
+                    <option value="{{ school.id }}">{{ school.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label>Department</label>
+            <select name="department" class="form-select">
+                <option value="">-</option>
+                {% for dept in departments %}
+                    <option value="{{ dept.id }}">{{ dept.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Create Staff</button>
+        <a href="{% url 'accounts:manage_staff' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

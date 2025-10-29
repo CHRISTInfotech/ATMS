@@ -1,0 +1,565 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Timeline - ATMS{% endblock %}
+
+{% block content %}
+<style>
+    .timeline-container {
+        background: #f8f9fa;
+        min-height: 100vh;
+        padding: 2rem 0;
+    }
+
+    .timeline-header {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .timeline-controls {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .search-wrapper {
+        position: relative;
+        flex: 1;
+        min-width: 300px;
+    }
+
+    .search-wrapper input {
+        padding-left: 2.5rem;
+        border-radius: 8px;
+        border: 2px solid #e2e8f0;
+    }
+
+    .search-wrapper i {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+    }
+
+    .timeline-main {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        overflow: hidden;
+    }
+
+    .timeline-grid {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        min-height: 600px;
+    }
+
+    /* Left Panel - Task List */
+    .task-list-panel {
+        border-right: 2px solid #e2e8f0;
+        overflow-y: auto;
+        max-height: 70vh;
+    }
+
+    .task-list-header {
+        padding: 1rem 1.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .task-item {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #e2e8f0;
+        transition: background 0.2s;
+        cursor: pointer;
+    }
+
+    .task-item:hover {
+        background: #f8fafc;
+    }
+
+    .task-title {
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 0.25rem;
+        font-size: 0.95rem;
+    }
+
+    .task-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 0.8rem;
+        color: #64748b;
+    }
+
+    .status-badge {
+        padding: 0.25rem 0.6rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .status-todo { background: #fef3c7; color: #92400e; }
+    .status-progress { background: #dbeafe; color: #1e40af; }
+    .status-review { background: #fed7aa; color: #9a3412; }
+    .status-done { background: #d1fae5; color: #065f46; }
+
+    /* Right Panel - Gantt Chart */
+    .gantt-panel {
+        overflow-x: auto;
+        overflow-y: auto;
+        max-height: 70vh;
+        position: relative;
+    }
+
+    .gantt-header {
+        display: flex;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        min-width: fit-content;
+    }
+
+    .gantt-date-cell {
+        min-width: 120px;
+        padding: 1rem;
+        text-align: center;
+        border-right: 1px solid rgba(255,255,255,0.2);
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+
+    .gantt-row {
+        display: flex;
+        min-height: 70px;
+        border-bottom: 1px solid #e2e8f0;
+        position: relative;
+        align-items: center;
+        min-width: fit-content;
+    }
+
+    .gantt-cell {
+        min-width: 120px;
+        border-right: 1px solid #f1f5f9;
+        position: relative;
+        height: 100%;
+    }
+
+    .gantt-bar {
+        position: absolute;
+        height: 32px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        padding: 0 0.75rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: all 0.2s;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    .gantt-bar:hover {
+        transform: translateY(-50%) scale(1.03);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        z-index: 5;
+    }
+
+    .gantt-bar-todo { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); }
+    .gantt-bar-progress { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+    .gantt-bar-review { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); }
+    .gantt-bar-done { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+
+    .gantt-today-line {
+        position: absolute;
+        width: 2px;
+        background: #ef4444;
+        height: 100%;
+        z-index: 5;
+        top: 0;
+    }
+
+    .gantt-today-label {
+        position: absolute;
+        top: -24px;
+        left: -20px;
+        background: #ef4444;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .empty-state {
+        padding: 4rem 2rem;
+        text-align: center;
+        color: #94a3b8;
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .zoom-controls {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .zoom-btn {
+        padding: 0.5rem 1rem;
+        border: 2px solid #e2e8f0;
+        background: white;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-weight: 500;
+    }
+
+    .zoom-btn:hover {
+        border-color: #667eea;
+        color: #667eea;
+    }
+
+    .zoom-btn.active {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+    }
+
+    @media (max-width: 768px) {
+        .timeline-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .task-list-panel {
+            border-right: none;
+            border-bottom: 2px solid #e2e8f0;
+        }
+    }
+</style>
+
+<div class="timeline-container">
+    <div class="container-fluid">
+        
+        <!-- Page Header -->
+        <div class="d-flex align-items-center mb-4">
+            <h5 class="fw-bold mb-0 me-2">Project</h5>
+            <i class="fas fa-chevron-right text-muted"></i>
+            <h5 class="fw-bold mb-0 ms-2 text-primary">
+                {% if current_project %}
+                    {{ current_project.name }}
+                {% else %}
+                    All Projects
+                {% endif %}
+            </h5>
+        </div>
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs mb-4">
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'accounts:staff_dashboard' %}">Summary</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'accounts:backlog_page' %}">Backlog</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'accounts:board_page' %}">Board</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" aria-current="page" href="{% url 'accounts:timeline_page' %}">Timeline</a>
+            </li>
+        </ul>
+
+        <!-- Timeline Header with Controls -->
+        <div class="timeline-header">
+            <form method="get" class="timeline-controls">
+                <div class="search-wrapper">
+                    <i class="fas fa-search"></i>
+                    <input type="text" name="q" placeholder="Search tasks by title, assignee, or team..." 
+                           value="{{ request.GET.q }}" class="form-control">
+                </div>
+
+                <select name="project" class="form-select" style="max-width: 250px;" onchange="this.form.submit()">
+                    <option value="">All Projects</option>
+                    {% for project in projects %}
+                        <option value="{{ project.id }}" {% if current_project and current_project.id == project.id %}selected{% endif %}>
+                            {{ project.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <div class="zoom-controls">
+                    <button type="button" class="zoom-btn" onclick="changeZoom('days')">Days</button>
+                    <button type="button" class="zoom-btn active" onclick="changeZoom('weeks')">Weeks</button>
+                    <button type="button" class="zoom-btn" onclick="changeZoom('months')">Months</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Timeline Main Area -->
+        <div class="timeline-main">
+            {% if tasks %}
+            <div class="timeline-grid">
+                <!-- Left Panel: Task List -->
+                <div class="task-list-panel">
+                    <div class="task-list-header">
+                        <i class="fas fa-tasks me-2"></i>Tasks ({{ tasks|length }})
+                    </div>
+                    {% for task in tasks %}
+                    <div class="task-item" data-task-id="{{ task.id }}">
+                        <div class="task-title">{{ task.title }}</div>
+                        <div class="task-meta">
+                            <span class="status-badge status-{{ task.status }}">
+                                {% if task.status == 'to_do' %}To Do
+                                {% elif task.status == 'in_progress' %}In Progress
+                                {% elif task.status == 'in_review' %}In Review
+                                {% elif task.status == 'done' %}Done
+                                {% endif %}
+                            </span>
+                            
+                            {% if task.assigned_to %}
+                                <span><i class="fas fa-user me-1"></i>{{ task.assigned_to.username }}</span>
+                            {% elif task.team %}
+                                <span><i class="fas fa-users me-1"></i>{{ task.team.name }}</span>
+                            {% else %}
+                                <span><i class="fas fa-user-slash me-1"></i>Unassigned</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Right Panel: Gantt Chart -->
+                <div class="gantt-panel" id="ganttPanel">
+                    <!-- Gantt Header (Dates) -->
+                    <div class="gantt-header" id="ganttHeader">
+                        <!-- Dates will be generated by JavaScript -->
+                    </div>
+
+                    <!-- Gantt Rows (Task Bars) -->
+                    <div id="ganttRows">
+                        {% for task in tasks %}
+                        <div class="gantt-row" data-task-id="{{ task.id }}"
+                             data-start="{{ task.start_date|date:'Y-m-d' }}"
+                             data-due="{{ task.due_date|date:'Y-m-d' }}"
+                             data-status="{{ task.status }}">
+                            <!-- Task bars will be generated by JavaScript -->
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Today indicator -->
+                    <div class="gantt-today-line" id="todayLine">
+                        <div class="gantt-today-label">Today</div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-calendar-times"></i>
+                <h5>No tasks to display</h5>
+                <p>Start by creating tasks or adjust your filters</p>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+
+<script>
+let currentZoom = 'weeks';
+
+// Generate date range for timeline
+function generateDateRange(startDate, endDate, zoom) {
+    const dates = [];
+    let current = new Date(startDate);
+    const end = new Date(endDate);
+    
+    while (current <= end) {
+        dates.push(new Date(current));
+        
+        if (zoom === 'days') {
+            current.setDate(current.getDate() + 1);
+        } else if (zoom === 'weeks') {
+            current.setDate(current.getDate() + 7);
+        } else if (zoom === 'months') {
+            current.setMonth(current.getMonth() + 1);
+        }
+    }
+    
+    return dates;
+}
+
+// Format date based on zoom level
+function formatDate(date, zoom) {
+    const options = { month: 'short', day: 'numeric' };
+    if (zoom === 'months') {
+        return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    }
+    return date.toLocaleDateString('en-US', options);
+}
+
+// Calculate position and width of task bar
+function calculateBarPosition(taskStart, taskDue, timelineStart, cellWidth, dates) {
+    const startDate = new Date(taskStart);
+    const dueDate = new Date(taskDue);
+    
+    let startIndex = 0;
+    let duration = 0;
+    
+    // Find start position
+    for (let i = 0; i < dates.length; i++) {
+        if (dates[i] <= startDate && (i === dates.length - 1 || dates[i + 1] > startDate)) {
+            startIndex = i;
+            break;
+        }
+    }
+    
+    // Calculate duration
+    for (let i = startIndex; i < dates.length; i++) {
+        if (dates[i] >= dueDate) break;
+        duration++;
+    }
+    
+    duration = Math.max(duration, 1); // Minimum 1 cell width
+    
+    return {
+        left: startIndex * cellWidth,
+        width: duration * cellWidth - 10 // 10px margin
+    };
+}
+
+// Render timeline
+function renderTimeline() {
+    const rows = document.querySelectorAll('.gantt-row');
+    if (rows.length === 0) return;
+    
+    // Get all task dates
+    const allDates = [];
+    rows.forEach(row => {
+        const start = row.dataset.start;
+        const due = row.dataset.due;
+        if (start && start !== 'None') allDates.push(new Date(start));
+        if (due && due !== 'None') allDates.push(new Date(due));
+    });
+    
+    if (allDates.length === 0) return;
+    
+    // Determine date range
+    const minDate = new Date(Math.min(...allDates));
+    const maxDate = new Date(Math.max(...allDates));
+    
+    // Add buffer
+    minDate.setDate(minDate.getDate() - 7);
+    maxDate.setDate(maxDate.getDate() + 14);
+    
+    const dates = generateDateRange(minDate, maxDate, currentZoom);
+    const cellWidth = 120;
+    
+    // Render header
+    const header = document.getElementById('ganttHeader');
+    header.innerHTML = '';
+    dates.forEach(date => {
+        const cell = document.createElement('div');
+        cell.className = 'gantt-date-cell';
+        cell.textContent = formatDate(date, currentZoom);
+        header.appendChild(cell);
+    });
+    
+    // Render task bars
+    rows.forEach(row => {
+        row.innerHTML = '';
+        dates.forEach(() => {
+            const cell = document.createElement('div');
+            cell.className = 'gantt-cell';
+            row.appendChild(cell);
+        });
+        
+        const taskStart = row.dataset.start;
+        const taskDue = row.dataset.due;
+        const status = row.dataset.status;
+        
+        if (taskStart && taskStart !== 'None' && taskDue && taskDue !== 'None') {
+            const position = calculateBarPosition(taskStart, taskDue, minDate, cellWidth, dates);
+            
+            const bar = document.createElement('div');
+            bar.className = `gantt-bar gantt-bar-${status}`;
+            bar.style.left = position.left + 'px';
+            bar.style.width = position.width + 'px';
+            
+            const taskTitle = row.closest('.timeline-grid')
+                .querySelector(`.task-item[data-task-id="${row.dataset.taskId}"] .task-title`)
+                .textContent;
+            bar.textContent = taskTitle;
+            
+            row.appendChild(bar);
+        }
+    });
+    
+    // Position today line
+    const today = new Date();
+    for (let i = 0; i < dates.length; i++) {
+        if (dates[i].toDateString() === today.toDateString()) {
+            const todayLine = document.getElementById('todayLine');
+            todayLine.style.left = (i * cellWidth) + 'px';
+            break;
+        }
+    }
+}
+
+// Change zoom level
+function changeZoom(zoom) {
+    currentZoom = zoom;
+    
+    // Update active button
+    document.querySelectorAll('.zoom-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    renderTimeline();
+}
+
+// Sync scroll between task list and gantt
+const taskPanel = document.querySelector('.task-list-panel');
+const ganttPanel = document.querySelector('.gantt-panel');
+
+if (taskPanel && ganttPanel) {
+    taskPanel.addEventListener('scroll', () => {
+        ganttPanel.scrollTop = taskPanel.scrollTop;
+    });
+    
+    ganttPanel.addEventListener('scroll', () => {
+        taskPanel.scrollTop = ganttPanel.scrollTop;
+    });
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    renderTimeline();
+});
+</script>
+
+{% endblock %}

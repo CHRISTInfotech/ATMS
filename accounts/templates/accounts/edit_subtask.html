@@ -1,0 +1,322 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Kanban Board{% endblock %}
+
+{% block content %}
+<style>
+.kanban-container {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    padding-bottom: 20px;
+}
+.kanban-column {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 10px;
+    flex: 1;
+    min-width: 280px;
+}
+.column-header {
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    color: #495057;
+}
+.task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.card {
+    background-color: #fff;
+    border-radius: 6px;
+    padding: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+.add-task-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0d6efd;
+    font-weight: 500;
+    border: 1px dashed #0d6efd;
+    background-color: #e7f1ff;
+}
+.task-title {
+    font-weight: 500;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+}
+.task-meta {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+.subtask {
+    padding-left: 10px;
+    border-left: 2px solid #dee2e6;
+    margin-top: 5px;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+.subtask-status-label {
+    display: inline-block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-left: 5px;
+}
+.subtask-status-todo { color: #6c757d; }
+.subtask-status-in_progress { color: #0d6efd; }
+.subtask-status-in_review { color: #ffc107; }
+.subtask-status-done { color: #28a745; }
+.comment {
+    font-size: 0.8rem;
+    margin-top: 4px;
+}
+</style>
+
+<div class="container-fluid py-4">
+    <!-- Project Header -->
+    <div class="d-flex align-items-center mb-4">
+        <h5 class="fw-bold mb-0 me-2">Projects</h5>
+        <i class="fas fa-chevron-right text-muted"></i>
+        {% if current_project %}
+            <h5 class="fw-bold mb-0 ms-2 text-primary">{{ current_project.name }}</h5>
+        {% else %}
+            <h5 class="fw-bold mb-0 ms-2 text-primary">All Projects</h5>
+        {% endif %}
+    </div>
+
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item"><a class="nav-link" href="{% url 'accounts:staff_dashboard' %}">Summary</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'accounts:backlog_page' %}">Backlog</a></li>
+        <li class="nav-item"><a class="nav-link active" href="#">Board</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'accounts:timeline_page' %}">Timeline</a></li>
+    </ul>
+
+    <!-- Search Bar -->
+    <div class="d-flex mb-4">
+        <div class="input-group search-bar me-3 w-25">
+            <input type="search" class="form-control border-end-0" placeholder="Search Board" id="boardSearch">
+            <span class="input-group-text bg-white border-start-0"><i class="fas fa-search"></i></span>
+        </div>
+    </div>
+
+    <!-- Kanban Board -->
+    <div class="kanban-container">
+        {% for status, tasks_list in kanban_tasks.items %}
+        <div class="kanban-column">
+            <h6 class="column-header">{{ status|title|cut:"_" }}</h6>
+            <div class="task-list">
+                <div class="card add-task-card" data-bs-toggle="modal" data-bs-target="#createTaskModal">
+                    <i class="fas fa-plus me-2"></i> Create Task
+                </div>
+
+                {% for task in tasks_list %}
+                <div class="card task-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="task-title">{{ task.title }}</div>
+
+                        <!-- Dropdown Icon Button -->
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="taskDropdown{{ task.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-caret-down"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="taskDropdown{{ task.id }}">
+                                <li>
+                                    <a class="dropdown-item open-task-modal" href="#" data-task-id="{{ task.id }}" data-bs-toggle="modal" data-bs-target="#taskModal">
+                                        Task Options
+                                    </a>
+                                </li>
+                                <!-- Add more dropdown items here if needed -->
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="task-meta">Assigned to: {{ task.assigned_to.username }}</div>
+                    <div class="task-meta">Due: {{ task.due_date|date:"M d, Y" }}</div>
+                    <div class="task-meta">Priority: {{ task.priority|capfirst }}</div>
+
+                    <!-- Subtasks and Comments remain unchanged -->
+                    {% for subtask in task.subtask_set.all %}
+                    <div class="subtask"
+                        onclick="openSubtaskModal('{{ subtask.id }}', '{{ subtask.title|escapejs }}', '{{ subtask.description|escapejs }}', '{{ subtask.deadline }}', '{{ subtask.status }}')">
+                        <strong>{{ subtask.title }}</strong>
+                        <span class="subtask-status-label 
+                            {% if subtask.status == 'todo' %}subtask-status-todo
+                            {% elif subtask.status == 'in_progress' %}subtask-status-in_progress
+                            {% elif subtask.status == 'in_review' %}subtask-status-in_review
+                            {% elif subtask.status == 'done' %}subtask-status-done
+                            {% endif %}">
+                            {% if subtask.status == 'todo' %}To Do
+                            {% elif subtask.status == 'in_progress' %}In Progress
+                            {% elif subtask.status == 'in_review' %}In Review
+                            {% elif subtask.status == 'done' %}Done
+                            {% endif %}
+                        </span>
+                        - {{ subtask.deadline|date:"M d" }}
+                    </div>
+                    {% endfor %}
+
+                    {% for comment in task.comment_set.all %}
+                    <div class="comment">
+                        <small class="text-muted">{{ comment.user.username }}:</small> {{ comment.text }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% empty %}
+                <p class="text-muted">No tasks</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- TASK MODAL -->
+<div class="modal fade" id="taskModal" tabindex="-1" aria-labelledby="taskModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="taskModalLabel">Task Options</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+
+        <!-- ADD SUBTASK -->
+        <h6 class="mb-2">Add Sub-task</h6>
+        <form id="subtaskForm" method="POST" action="{% url 'accounts:add_subtask' %}">
+            {% csrf_token %}
+            <input type="hidden" name="task_id" id="subtask_task_id">
+            <input type="text" name="title" placeholder="Sub-task Title" class="form-control mb-1" required>
+            <input type="date" name="deadline" class="form-control mb-1">
+            <textarea name="description" placeholder="Description" class="form-control mb-1"></textarea>
+            <button type="submit" class="btn btn-primary btn-sm w-100 mt-1">Add Sub-task</button>
+        </form>
+
+        <hr>
+
+        <!-- ADD COMMENT -->
+        <h6 class="mb-2">Add Comment</h6>
+        <form id="commentForm" method="POST">
+            {% csrf_token %}
+            <textarea name="comment" placeholder="Add Comment" class="form-control mb-1" required></textarea>
+            <button type="submit" class="btn btn-success btn-sm w-100 mt-1">Add Comment</button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SUBTASK MODAL -->
+<div class="modal fade" id="subtaskModal" tabindex="-1" aria-labelledby="subtaskModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="subtaskModalLabel">Edit Sub-task</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="editSubtaskForm" method="POST">
+            {% csrf_token %}
+            <input type="hidden" id="original_title">
+            <input type="hidden" id="original_description">
+            <input type="hidden" id="original_deadline">
+
+            <div class="mb-2">
+                <label class="form-label">Title</label>
+                <input type="text" name="title" id="subtask_title" class="form-control">
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Description</label>
+                <textarea name="description" id="subtask_description" class="form-control"></textarea>
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Deadline</label>
+                <input type="date" name="deadline" id="subtask_deadline" class="form-control">
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Status</label>
+                <select name="status" id="subtask_status" class="form-select">
+                    <option value="todo">To Do</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="in_review">In Review</option>
+                    <option value="done">Done</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Update Sub-task</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Open task modal and set task ID for subtask/comment forms
+document.querySelectorAll('.open-task-modal').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const taskId = this.dataset.taskId;
+        document.getElementById('subtask_task_id').value = taskId;
+        document.getElementById('commentForm').action = `/accounts/task/${taskId}/add_comment/`;
+        document.getElementById('taskModalLabel').innerText = 'Task Options';
+    });
+});
+
+// Open subtask modal
+function openSubtaskModal(id, title, description, deadline, status) {
+    var modal = new bootstrap.Modal(document.getElementById('subtaskModal'));
+    modal.show();
+
+    document.getElementById('original_title').value = title;
+    document.getElementById('original_description').value = description;
+    document.getElementById('original_deadline').value = deadline;
+
+    document.getElementById('subtask_title').value = title;
+    document.getElementById('subtask_description').value = description;
+    document.getElementById('subtask_deadline').value = deadline;
+    document.getElementById('subtask_status').value = status;
+
+    document.getElementById('editSubtaskForm').action = `/accounts/subtask/${id}/edit/`;
+}
+
+// Preserve unchanged fields on submit
+document.getElementById('editSubtaskForm').addEventListener('submit', function(e) {
+    const titleField = document.getElementById('subtask_title');
+    const descField = document.getElementById('subtask_description');
+    const deadlineField = document.getElementById('subtask_deadline');
+
+    if(!titleField.value) titleField.value = document.getElementById('original_title').value;
+    if(!descField.value) descField.value = document.getElementById('original_description').value;
+    if(!deadlineField.value) deadlineField.value = document.getElementById('original_deadline').value;
+});
+
+// ==========================
+// Kanban Board Search Filter
+// ==========================
+const searchInput = document.getElementById('boardSearch');
+searchInput.addEventListener('input', function() {
+    const query = this.value.toLowerCase();
+    const tasks = document.querySelectorAll('.task-card');
+
+    tasks.forEach(task => {
+        const title = task.querySelector('.task-title').innerText.toLowerCase();
+        const assignedTo = task.querySelector('.task-meta').innerText.toLowerCase();
+        if(title.includes(query) || assignedTo.includes(query)) {
+            task.style.display = '';
+        } else {
+            task.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,1030 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Manage Users{% endblock %}
+
+{% block content %}
+<style>
+    .users-container {
+        background: #f8f9fa;
+        min-height: 100vh;
+        padding: 2rem 0;
+    }
+    
+    .page-header-card {
+        background: #ffffff;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid #e0e0e0;
+    }
+    
+    .page-title {
+        color: #2d3748;
+        font-weight: 600;
+        font-size: 1.75rem;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .page-title i {
+        color: #0d6efd;
+        font-size: 1.5rem;
+    }
+    
+    .add-user-btn {
+        background: #48bb78;
+        border: none;
+        padding: 0.65rem 1.25rem;
+        border-radius: 6px;
+        color: white;
+        font-weight: 500;
+        transition: background 0.2s ease;
+    }
+    
+    .add-user-btn:hover {
+        background: #38a169;
+    }
+    
+    .add-user-btn i {
+        margin-right: 0.5rem;
+    }
+
+    .upload-csv-btn {
+        background: #0d6efd;
+        border: none;
+        padding: 0.65rem 1.25rem;
+        border-radius: 6px;
+        color: white;
+        font-weight: 500;
+        transition: background 0.2s ease;
+        margin-right: 0.5rem;
+    }
+    
+    .upload-csv-btn:hover {
+        background: #0a58ca;
+    }
+    
+    .upload-csv-btn i {
+        margin-right: 0.5rem;
+    }
+    
+    .form-card {
+        background: #ffffff;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+        border: 1px solid #e0e0e0;
+    }
+    
+    .form-card-header {
+        background: #48bb78;
+        color: white;
+        padding: 1rem 1.5rem;
+        border: none;
+    }
+
+    .form-card-header.csv-header {
+        background: #0d6efd;
+    }
+    
+    .form-card-header h5 {
+        margin: 0;
+        font-weight: 500;
+        font-size: 1.1rem;
+    }
+    
+    .form-card-body {
+        padding: 2rem;
+        background: #ffffff;
+    }
+    
+    .form-section-divider {
+        margin: 1.5rem 0;
+        border: none;
+        height: 1px;
+        background: #e0e0e0;
+    }
+    
+    .form-label-enhanced {
+        font-weight: 500;
+        color: #4a5568;
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-select-enhanced {
+        padding: 0.65rem 2.5rem 0.65rem 0.875rem;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        transition: border-color 0.2s ease;
+        background-color: white;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 16px 12px;
+    }
+    
+    .form-select-enhanced[multiple] {
+        background-image: none;
+        padding: 0.65rem 0.875rem;
+    }
+    
+    .form-control-enhanced:focus, .form-select-enhanced:focus {
+        outline: none;
+        border-color: #0d6efd;
+        background-color: white;
+    }
+
+    .file-upload-area {
+        border: 2px dashed #cbd5e0;
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        background: #ffffff;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .file-upload-area:hover {
+        border-color: #0d6efd;
+        background: #e6f2ff;
+    }
+    
+    .file-upload-area.dragover {
+        border-color: #48bb78;
+        background: #e6ffed;
+    }
+    
+    .file-upload-icon {
+        font-size: 2.5rem;
+        color: #cbd5e0;
+        margin-bottom: 1rem;
+    }
+    
+    .file-upload-text {
+        color: #4a5568;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    
+    .file-upload-hint {
+        color: #718096;
+        font-size: 0.875rem;
+    }
+    
+    .file-input-hidden {
+        display: none;
+    }
+    
+    .selected-file-info {
+        display: none;
+        background: #e6f2ff;
+        border: 1px solid #0d6efd;
+        border-radius: 6px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .selected-file-info.active {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .file-name {
+        color: #0d6efd;
+        font-weight: 600;
+    }
+    
+    .btn-remove-file {
+        background: #f56565;
+        border: none;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-remove-file:hover {
+        background: #e53e3e;
+    }
+    
+    .csv-template-link {
+        color: #0d6efd;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .csv-template-link:hover {
+        color: #0a58ca;
+        text-decoration: underline;
+    }
+
+    .alert-info {
+        background: #e6f2ff;
+        border: 1px solid #0d6efd;
+        border-radius: 6px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1.5rem;
+        color: #084298;
+    }
+
+    .alert-info code {
+        background: rgba(13, 110, 253, 0.1);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        font-weight: 600;
+        color: #0d6efd;
+    }
+
+    .alert-info small {
+        display: block;
+        margin-top: 0.5rem;
+        color: #4a5568;
+    }
+    
+    .btn-cancel {
+        padding: 0.65rem 1.5rem;
+        background: #e2e8f0;
+        border: none;
+        border-radius: 6px;
+        color: #4a5568;
+        font-weight: 500;
+        transition: background 0.2s ease;
+    }
+    
+    .btn-cancel:hover {
+        background: #cbd5e0;
+    }
+    
+    .btn-create {
+        padding: 0.65rem 1.5rem;
+        background: #48bb78;
+        border: none;
+        border-radius: 6px;
+        color: white;
+        font-weight: 500;
+        transition: background 0.2s ease;
+    }
+    
+    .btn-create:hover {
+        background: #38a169;
+    }
+    
+    .table-card {
+        background: #ffffff;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #e0e0e0;
+        padding: 1.5rem;
+    }
+    
+    .enhanced-table {
+        margin: 0;
+        font-size: 0.9rem;
+        width: 100% !important;
+    }
+    
+    .enhanced-table thead th {
+        background: #f8f9fa;
+        color: #495057;
+        font-weight: 600;
+        font-size: 0.85rem;
+        padding: 1rem 0.75rem;
+        border-bottom: 2px solid #dee2e6;
+    }
+    
+    .enhanced-table tbody tr {
+        transition: background 0.2s ease;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .enhanced-table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .enhanced-table tbody td {
+        padding: 0.875rem 0.75rem;
+        vertical-align: middle;
+        color: #4a5568;
+    }
+    
+    .badge-dept {
+        background: #0d6efd;
+        color: white;
+        padding: 0.3rem 0.65rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        margin-right: 0.25rem;
+        margin-bottom: 0.25rem;
+        display: inline-block;
+    }
+    
+    .action-btn-group {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: center;
+    }
+    
+    .btn-edit {
+        padding: 0.4rem 0.65rem;
+        background: #0d6efd;
+        border: none;
+        border-radius: 4px;
+        color: white;
+        transition: background 0.2s ease;
+        font-size: 0.875rem;
+    }
+    
+    .btn-edit:hover {
+        background: #0a58ca;
+    }
+    
+    .btn-save {
+        padding: 0.4rem 0.65rem;
+        background: #48bb78;
+        border: none;
+        border-radius: 4px;
+        color: white;
+        transition: background 0.2s ease;
+        font-size: 0.875rem;
+    }
+    
+    .btn-save:hover {
+        background: #38a169;
+    }
+    
+    .btn-delete {
+        padding: 0.4rem 0.65rem;
+        background: #f56565;
+        border: none;
+        border-radius: 4px;
+        color: white;
+        transition: background 0.2s ease;
+        font-size: 0.875rem;
+    }
+    
+    .btn-delete:hover {
+        background: #e53e3e;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: #a0aec0;
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+    
+    .empty-state p {
+        font-size: 1rem;
+        margin: 0;
+    }
+    
+    .info-helper {
+        font-size: 0.8rem;
+        color: #718096;
+        margin-top: 0.25rem;
+    }
+    
+    .user-edit-form {
+        display: contents;
+    }
+
+    /* DataTables custom styling */
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter,
+    .dataTables_wrapper .dataTables_info,
+    .dataTables_wrapper .dataTables_paginate {
+        padding: 0.75rem 0;
+    }
+
+    .dataTables_wrapper .dataTables_length select,
+    .dataTables_wrapper .dataTables_filter input {
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        padding: 0.4rem 0.75rem;
+        margin: 0 0.5rem;
+    }
+
+    .dataTables_wrapper .dataTables_length select {
+        padding-right: 2rem;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 0.5rem center;
+        background-size: 12px 10px;
+        appearance: none;
+    }
+
+    .dataTables_wrapper .dataTables_filter input:focus,
+    .dataTables_wrapper .dataTables_length select:focus {
+        outline: none;
+        border-color: #0d6efd;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        padding: 0.4rem 0.75rem;
+        margin: 0 0.25rem;
+        border-radius: 4px;
+        border: 1px solid #dee2e6;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        background: #0d6efd;
+        color: white !important;
+        border-color: #0d6efd;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        background: #f8f9fa;
+        border-color: #0d6efd;
+    }
+    
+    @media (max-width: 768px) {
+        .page-title {
+            font-size: 1.5rem;
+        }
+        
+        .form-card-body {
+            padding: 1.5rem;
+        }
+        
+        .action-btn-group {
+            flex-direction: column;
+        }
+
+        .upload-csv-btn {
+            margin-bottom: 0.5rem;
+            margin-right: 0 !important;
+        }
+    }
+</style>
+
+<!-- DataTables CSS -->
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+
+<div class="users-container">
+    <div class="container-xl">
+
+        <!-- Header Section -->
+        <div class="page-header-card">
+            <div class="row align-items-center">
+                <div class="col-sm-6">
+                    <h2 class="page-title">
+                        <i class="fa fa-users"></i>
+                        Manage <b>Users</b>
+                    </h2>
+                </div>
+                <div class="col-sm-6 text-end">
+                    <button class="upload-csv-btn" data-bs-toggle="collapse" data-bs-target="#uploadCsvForm">
+                        <i class="fa fa-upload"></i> Upload CSV
+                    </button>
+                    <button class="add-user-btn" data-bs-toggle="collapse" data-bs-target="#addUserForm">
+                        <i class="fa fa-user-plus"></i> Add New User
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload CSV Form Card -->
+        <div class="collapse" id="uploadCsvForm">
+            <div class="form-card">
+                <div class="form-card-header csv-header">
+                    <h5><i class="fa fa-upload me-2"></i>Upload Users CSV File</h5>
+                </div>
+                <div class="form-card-body">
+                    <form method="POST" action="{% url 'accounts:upload_users_csv' %}" enctype="multipart/form-data" id="csvUploadForm">
+                        {% csrf_token %}
+
+                        <!-- CSV Format Information -->
+                        <div class="alert alert-info" role="alert">
+                            <i class="fa fa-info-circle me-2"></i>
+                            <strong>CSV Format Required:</strong> Your CSV file should have columns: 
+                            <code>email</code>, <code>emp_id</code>, <code>phone_number</code>, <code>campus_name</code>, <code>school_name</code>, <code>department_names</code>
+                            <small>Note: Separate multiple departments with semicolon (;). Campus, School, and Departments are optional.</small>
+                            <br>
+                            <a href="{% url 'accounts:download_users_csv_template' %}" class="csv-template-link mt-2">
+                                <i class="fa fa-download"></i>
+                                <span>Download CSV Template</span>
+                            </a>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="file-upload-area" id="fileUploadArea">
+                                <i class="fa fa-cloud-upload file-upload-icon"></i>
+                                <p class="file-upload-text">Click to upload or drag and drop</p>
+                                <p class="file-upload-hint">CSV file only (Max 5MB)</p>
+                                <input type="file" name="csv_file" id="csvFileInput" class="file-input-hidden" accept=".csv" required>
+                            </div>
+                            
+                            <div class="selected-file-info" id="selectedFileInfo">
+                                <div>
+                                    <i class="fa fa-file-csv me-2" style="color: #48bb78;"></i>
+                                    <span class="file-name" id="fileName"></span>
+                                </div>
+                                <button type="button" class="btn-remove-file" id="removeFileBtn">
+                                    <i class="fa fa-times"></i> Remove
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-3 justify-content-end pt-3">
+                            <button type="button" class="btn btn-cancel" data-bs-toggle="collapse" data-bs-target="#uploadCsvForm">
+                                <i class="fa fa-times me-2"></i>Cancel
+                            </button>
+                            <button type="submit" class="btn btn-create" id="uploadCsvBtn" disabled>
+                                <i class="fa fa-upload me-2"></i>Upload & Import
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add User Form Card -->
+        <div class="collapse" id="addUserForm">
+            <div class="form-card">
+                <div class="form-card-header">
+                    <h5><i class="fa fa-user-plus me-2"></i>Add New User</h5>
+                </div>
+                <div class="form-card-body">
+                    <form method="POST" action="{% url 'accounts:create_user' %}">
+                        {% csrf_token %}
+                        
+                        <!-- Personal Information Section -->
+                        <div class="row g-4 mb-4">
+                            <div class="col-lg-4">
+                                <label class="form-label-enhanced">Email Address <span class="text-danger">*</span></label>
+                                <input type="email" name="email" id="userEmail" class="form-control form-control-enhanced" placeholder="Enter Email" required>
+                            </div>
+                            <div class="col-lg-4">
+                                <label class="form-label-enhanced">Employee ID <span class="text-danger">*</span></label>
+                                <input type="text" name="emp_id" class="form-control form-control-enhanced" placeholder="Enter Employee ID" required>
+                            </div>
+                            <div class="col-lg-4">
+                                <label class="form-label-enhanced">Phone Number <span class="text-danger">*</span></label>
+                                <input type="text" name="phone_number" class="form-control form-control-enhanced" placeholder="Enter Phone Number"
+                                       pattern="\d*" title="Phone number must contain only digits" required>
+                            </div>
+                        </div>
+
+                        <hr class="form-section-divider">
+
+                        <!-- Organization Information Section -->
+                        <div class="row g-4 mb-4">
+                            <div class="col-lg-4">
+                                <label class="form-label-enhanced">Campus</label>
+                                <select name="campus" id="newCampusSelect" class="form-select form-select-enhanced">
+                                    <option value="">Select Campus</option>
+                                    {% for campus in campuses %}
+                                        <option value="{{ campus.id }}">{{ campus.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-lg-4">
+                                <label class="form-label-enhanced">School</label>
+                                <select name="school" id="newSchoolSelect" class="form-select form-select-enhanced" disabled>
+                                    <option value="">Select School</option>
+                                    {% for school in schools %}
+                                        <option value="{{ school.id }}" data-campus="{{ school.campus.id }}">{{ school.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="info-helper"><i class="fa fa-info-circle"></i> Optional - for reference only</small>
+                            </div>
+                            <div class="col-lg-4">
+                                <label class="form-label-enhanced">Department(s)</label>
+                                <select name="department" id="newDepartmentSelect" class="form-select form-select-enhanced" multiple size="3" disabled>
+                                    <option value="">Select Department</option>
+                                </select>
+                                <small class="info-helper"><i class="fa fa-info-circle"></i> Select from entire campus. Hold Ctrl/Cmd for multiple</small>
+                            </div>
+                        </div>
+
+                        <!-- Hidden username field that will be populated by email -->
+                        <input type="hidden" name="username" id="usernameField" value="">
+
+                        <!-- Form Actions -->
+                        <div class="d-flex gap-3 justify-content-end pt-3">
+                            <button type="button" class="btn btn-cancel" data-bs-toggle="collapse" data-bs-target="#addUserForm">
+                                <i class="fa fa-times me-2"></i>Cancel
+                            </button>
+                            <button type="submit" class="btn btn-create">
+                                <i class="fa fa-check me-2"></i>Create User
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Table -->
+        {% if users %}
+        <div class="table-card">
+            <div class="table-responsive">
+                <table class="table enhanced-table align-middle mb-0" id="usersDataTable">
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Emp ID</th>
+                            <th>Phone</th>
+                            <th>Campus</th>
+                            <th>School</th>
+                            <th>Departments</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr data-user-id="{{ user.id }}">
+                            <form method="POST" action="{% url 'accounts:update_user_role' user.id %}" class="user-edit-form">
+                                {% csrf_token %}
+
+                                <!-- Email -->
+                                <td>
+                                    <span class="view-mode">{{ user.email }}</span>
+                                    <input type="email" name="email" value="{{ user.email }}" class="form-control form-control-sm edit-mode d-none" required>
+                                </td>
+
+                                <!-- Emp ID -->
+                                <td>
+                                    <span class="view-mode">{{ user.emp_id|default:"-" }}</span>
+                                    <input type="text" name="emp_id" value="{{ user.emp_id|default:'' }}" class="form-control form-control-sm edit-mode d-none">
+                                </td>
+
+                                <!-- Phone -->
+                                <td>
+                                    <span class="view-mode">{{ user.phone_number|default:"-" }}</span>
+                                    <input type="text" name="phone_number" value="{{ user.phone_number|default:'' }}" class="form-control form-control-sm edit-mode d-none" pattern="\d*" title="Phone must be digits only">
+                                </td>
+
+                                <!-- Campus -->
+                                <td>
+                                    <span class="view-mode">{{ user.campus.name|default:"-" }}</span>
+                                    <select name="campus" class="form-select form-select-sm edit-mode d-none campusSelect" data-user-campus="{{ user.campus.id|default:'' }}">
+                                        <option value="">-</option>
+                                        {% for campus in campuses %}
+                                        <option value="{{ campus.id }}" {% if user.campus and user.campus.id == campus.id %}selected{% endif %}>{{ campus.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+
+                                <!-- School -->
+                                <td>
+                                    <span class="view-mode">{{ user.school.name|default:"-" }}</span>
+                                    <select name="school" class="form-select form-select-sm edit-mode d-none schoolSelect"
+                                            data-initial-value="{{ user.school.id|default:'' }}">
+                                        <option value="">-</option>
+                                        {% for school in schools %}
+                                        <option value="{{ school.id }}" data-campus="{{ school.campus.id }}" {% if user.school and user.school.id == school.id %}selected{% endif %}>{{ school.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <small class="info-helper edit-mode d-none"><i class="fa fa-info-circle"></i> Optional</small>
+                                </td>
+
+                                <!-- Departments -->
+                                <td>
+                                    <span class="view-mode">
+                                        {% if user.department.all %}
+                                            {% for dept in user.department.all %}
+                                                <span class="badge-dept">{{ dept.name }}</span>
+                                            {% endfor %}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </span>
+                                    <select name="department" class="form-select form-select-sm edit-mode d-none departmentSelect" multiple
+                                            data-initial-depts="{% for dept in user.department.all %}{{ dept.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                                        {% for dept in departments %}
+                                            <option value="{{ dept.id }}" 
+                                                    data-school="{{ dept.school.id }}"
+                                                    data-campus="{{ dept.school.campus.id }}"
+                                                    {% if dept in user.department.all %}selected{% endif %}>
+                                                {{ dept.name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    <small class="info-helper edit-mode d-none"><i class="fa fa-info-circle"></i> From entire campus</small>
+                                </td>
+
+                                <!-- Hidden username field -->
+                                <input type="hidden" name="username" value="{{ user.email }}">
+
+                                <!-- Actions -->
+                                <td class="text-center" style="white-space:nowrap;">
+                                    <div class="action-btn-group">
+                                        <button type="button" class="btn btn-edit editBtn">
+                                            <i class="fa fa-edit"></i>
+                                        </button>
+                                        <button type="submit" class="btn btn-save updateBtn d-none">
+                                            <i class="fa fa-check"></i>
+                                        </button>
+                                        <a href="{% url 'accounts:delete_user' user.id %}" class="btn btn-delete" onclick="return confirm('Are you sure you want to delete this user?');">
+                                            <i class="fa fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+
+                            </form>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <div class="table-card">
+            <div class="empty-state">
+                <i class="fa fa-users"></i>
+                <p>No users found. Add your first user to get started!</p>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<!-- DataTables JS -->
+<script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+<!-- JavaScript -->
+<script>
+
+const fileUploadArea = document.getElementById('fileUploadArea');
+const fileInput = document.getElementById('csvFileInput'); // ✅ match the template
+
+fileUploadArea.addEventListener('click', () => {
+    fileInput.click();
+});
+
+// Show selected file info
+fileInput.addEventListener('change', () => {
+    if (fileInput.files.length > 0) {
+        document.getElementById('fileName').textContent = fileInput.files[0].name;
+        document.getElementById('selectedFileInfo').classList.add('active');
+        document.getElementById('uploadCsvBtn').disabled = false;
+    }
+});
+
+// Remove file button
+document.getElementById('removeFileBtn').addEventListener('click', () => {
+    fileInput.value = '';
+    document.getElementById('fileName').textContent = '';
+    document.getElementById('selectedFileInfo').classList.remove('active');
+    document.getElementById('uploadCsvBtn').disabled = true;
+});
+
+// Drag & Drop
+fileUploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    fileUploadArea.classList.add('dragover');
+});
+
+fileUploadArea.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    fileUploadArea.classList.remove('dragover');
+});
+
+fileUploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    fileUploadArea.classList.remove('dragover');
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        fileInput.files = files; // set files to input
+        document.getElementById('fileName').textContent = files[0].name;
+        document.getElementById('selectedFileInfo').classList.add('active');
+        document.getElementById('uploadCsvBtn').disabled = false;
+    }
+});
+
+
+
+$(document).ready(function() {
+    
+    // Initialize DataTable
+    var table = $('#usersDataTable').DataTable({
+        "pageLength": 10,
+        "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
+        "order": [[0, "asc"]],
+        "columnDefs": [
+            { "orderable": false, "targets": -1 }
+        ]
+    });
+
+    // Username = Email functionality for add user form
+    $('#userEmail').on('input', function() {
+        $('#usernameField').val($(this).val());
+    });
+
+    // Edit/Update Toggle
+    $(document).on('click', '.editBtn', function() {
+        const tr = $(this).closest('tr');
+        const form = tr.find('.user-edit-form');
+        
+        tr.find('.view-mode').addClass('d-none');
+        tr.find('.edit-mode').removeClass('d-none');
+        $(this).addClass('d-none');
+        tr.find('.updateBtn').removeClass('d-none');
+        
+        // Setup cascading for this row when entering edit mode
+        const campusSelect = tr.find('.campusSelect')[0];
+        const schoolSelect = tr.find('.schoolSelect')[0];
+        const departmentSelect = tr.find('.departmentSelect')[0];
+        
+        if(campusSelect && schoolSelect && departmentSelect){
+            const $campus = $(campusSelect);
+            const $school = $(schoolSelect);
+            const $dept = $(departmentSelect);
+            
+            // Store initial values
+            $school.data('initial-value', $school.val());
+            
+            // Get initial department selections from data attribute
+            const initialDepts = $dept.data('initial-depts');
+            if (initialDepts) {
+                const deptArray = initialDepts.toString().split(',').filter(d => d);
+                $dept.data('selected-depts', deptArray);
+            }
+            
+            // Setup cascading (it will preserve department selections)
+            setupCascading(campusSelect, schoolSelect, departmentSelect, true);
+        }
+    });
+    
+    // Form submission handler to ensure all selected options are submitted
+    $(document).on('submit', '.user-edit-form', function(e) {
+        const form = $(this);
+        const deptSelect = form.find('.departmentSelect');
+        
+        // Make sure all selected options are properly marked
+        if (deptSelect.length > 0) {
+            const selectedValues = deptSelect.val() || [];
+            deptSelect.find('option').prop('selected', false);
+            selectedValues.forEach(function(val) {
+                deptSelect.find(`option[value="${val}"]`).prop('selected', true);
+            });
+        }
+        
+        return true; // Allow form submission
+    });
+
+    // Cascading Dropdowns Function
+    function setupCascading(campusSelect, schoolSelect, departmentSelect, isEditMode = false) {
+        const $campus = $(campusSelect);
+        const $school = $(schoolSelect);
+        const $dept = $(departmentSelect);
+        
+        // Store all options with their data attributes (avoid duplicates)
+        const allSchools = new Map();
+        const allDepts = new Map();
+        
+        // Always get all departments from Django template
+        {% for department in departments %}
+        allDepts.set('{{ department.id }}', {
+            value: '{{ department.id }}',
+            text: '{{ department.name }}',
+            school: '{{ department.school.id }}',
+            campus: '{{ department.school.campus.id }}'
+        });
+        {% endfor %}
+        
+        // Get schools based on context
+        if (campusSelect.id === 'newCampusSelect') {
+            $('#newSchoolSelect option[value!=""]').each(function() {
+                const val = $(this).val();
+                if (!allSchools.has(val)) {
+                    allSchools.set(val, {
+                        value: val,
+                        text: $(this).text(),
+                        campus: $(this).data('campus')
+                    });
+                }
+            });
+        } else {
+            // For edit rows
+            $school.find('option[value!=""]').each(function() {
+                const val = $(this).val();
+                if (!allSchools.has(val)) {
+                    allSchools.set(val, {
+                        value: val,
+                        text: $(this).text(),
+                        campus: $(this).data('campus')
+                    });
+                }
+            });
+        }
+
+        // Store currently selected department values
+        let currentSelectedDepts = [];
+        
+        // Get initial selections if in edit mode
+        if (isEditMode) {
+            currentSelectedDepts = $dept.data('selected-depts') || [];
+        }
+        
+        // Function to update departments based on campus
+        function updateDepartments(campusId, preserveSelections = true) {
+            if (preserveSelections && !isEditMode) {
+                currentSelectedDepts = $dept.val() || [];
+            }
+            
+            $dept.html('');
+            
+            if (campusId) {
+                // Add all departments from selected campus
+                allDepts.forEach(function(dept) {
+                    if (dept.campus == campusId) {
+                        const isSelected = currentSelectedDepts.includes(dept.value.toString());
+                        $dept.append(`<option value="${dept.value}" data-school="${dept.school}" data-campus="${dept.campus}" ${isSelected ? 'selected' : ''}>${dept.text}</option>`);
+                    }
+                });
+                $dept.prop('disabled', false);
+            } else {
+                $dept.prop('disabled', true);
+            }
+        }
+
+        // On campus change
+        $campus.off('change.cascade').on('change.cascade', function() {
+            const cid = $(this).val();
+            
+            $school.html('<option value="">Select School</option>');
+            
+            if (cid) {
+                // Add schools that belong to selected campus
+                allSchools.forEach(function(school) {
+                    if (school.campus == cid) {
+                        $school.append(`<option value="${school.value}" data-campus="${school.campus}">${school.text}</option>`);
+                    }
+                });
+                $school.prop('disabled', false);
+                
+                // Update departments for this campus
+                updateDepartments(cid, true);
+                
+                // Restore school value if in edit mode
+                if (isEditMode) {
+                    const initialSchool = $school.data('initial-value');
+                    if (initialSchool) {
+                        setTimeout(function() {
+                            $school.val(initialSchool);
+                        }, 10);
+                    }
+                }
+            } else {
+                $school.prop('disabled', true);
+                $dept.html('');
+                $dept.prop('disabled', true);
+            }
+        });
+
+        // On school change - departments remain showing all from campus
+        $school.off('change.cascade').on('change.cascade', function() {
+            // School selection doesn't affect department list
+            // User can select any department from the campus regardless of school
+        });
+
+        // Department change - store current selections
+        $dept.off('change.cascade').on('change.cascade', function() {
+            currentSelectedDepts = $(this).val() || [];
+        });
+
+        // If in edit mode and campus is already selected, trigger to populate
+        if (isEditMode && $campus.val()) {
+            setTimeout(function() {
+                $campus.trigger('change.cascade');
+            }, 50);
+        }
+    }
+
+    // Setup Cascading for Table Rows - removed from here, will be set on edit click
+
+    // Setup Cascading for Add User Form
+    const newCampus = document.getElementById('newCampusSelect');
+    const newSchool = document.getElementById('newSchoolSelect');
+    const newDept = document.getElementById('newDepartmentSelect');
+    if(newCampus && newSchool && newDept){
+        setupCascading(newCampus, newSchool, newDept, false);
+    }
+
+});
+</script>
+
+{% endblock %}

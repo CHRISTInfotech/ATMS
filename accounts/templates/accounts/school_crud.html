@@ -1,0 +1,187 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}School Management{% endblock %}
+
+{% block content %}
+<div class="container-xl mt-4">
+
+    <!-- Header Section -->
+    <div class="row mb-4 align-items-center">
+        <div class="col-sm-6 d-flex align-items-center gap-2">
+            <a href="{% url 'accounts:dashboard' %}" class="btn btn-light btn-sm">
+                <i class="fa fa-arrow-left me-1"></i> Back
+            </a>
+            <h2 class="mb-0"><i class="fa fa-graduation-cap me-2 text-primary"></i>Manage <b>Schools</b></h2>
+        </div>
+        <div class="col-sm-6 text-end">
+            <button class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#addSchoolForm">
+                <i class="fa fa-plus-circle me-2"></i> Add New School
+            </button>
+        </div>
+    </div>
+
+
+    <!-- Add School Form Card -->
+    <div class="collapse mb-4" id="addSchoolForm">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-gradient-primary text-white py-3">
+                <h5 class="mb-0 fw-semibold"><i class="fa fa-plus-circle me-2"></i>Add New School</h5>
+            </div>
+            <div class="card-body p-4 bg-light">
+                <form method="POST" action="{% url 'accounts:school_crud' %}">
+                    {% csrf_token %}
+                    
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label small text-secondary mb-1">School Name <span class="text-danger">*</span></label>
+                            <input type="text" name="name" class="form-control form-control-lg" placeholder="Enter school name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-secondary mb-1">Campus <span class="text-danger">*</span></label>
+                            <select name="campus" class="form-select form-select-lg" required>
+                                <option value="">Select Campus</option>
+                                {% for campus in campuses %}
+                                    <option value="{{ campus.id }}">{{ campus.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="d-flex gap-3 justify-content-end">
+                        <button type="button" class="btn btn-light btn-lg px-4" data-bs-toggle="collapse" data-bs-target="#addSchoolForm">
+                            <i class="fa fa-times me-2"></i>Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary btn-lg px-4">
+                            <i class="fa fa-check me-2"></i>Add School
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Section -->
+    <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body py-2">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <small class="text-muted">
+                        <i class="fa fa-info-circle me-1"></i>
+                        Total Schools: <strong>{{ schools|length }}</strong>
+                    </small>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text"><i class="fa fa-search"></i></span>
+                        <input class="form-control" id="schoolSearch" type="text" placeholder="Search ">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- School Table -->
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table id="schoolDataTable" class="table table-hover table-sm align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="fw-semibold" style="width: 80px;">Sr. No.</th>
+                            <th class="fw-semibold">School Name</th>
+                            <th class="fw-semibold">Campus</th>
+                            <th class="fw-semibold text-center" style="width: 150px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="schoolTable">
+                        {% for school in schools %}
+                        <tr>
+                            <td class="text-center">
+                                <span class="badge bg-light text-dark">{{ forloop.counter }}</span>
+                            </td>
+                            <td>
+                                <i class="fa fa-graduation-cap text-primary me-2"></i>
+                                <strong>{{ school.name }}</strong>
+                            </td>
+                            <td>
+                                <span class="badge bg-info bg-opacity-10 text-info">
+                                    <i class="fa fa-university me-1"></i>{{ school.campus.name }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'accounts:edit_school' school.id %}" class="btn btn-outline-warning" title="Edit School" data-bs-toggle="tooltip">
+                                        <i class="fa fa-edit"></i>
+                                    </a>
+                                    <form method="POST" action="{% url 'accounts:delete_school' school.id %}" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this school? This action cannot be undone.');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline-danger" title="Delete School" data-bs-toggle="tooltip">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-5">
+                                <i class="fa fa-graduation-cap fa-3x text-muted mb-3 d-block"></i>
+                                <p class="text-muted mb-0">No schools found. Add your first school to get started!</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Custom Styles -->
+<style>
+.card { border-radius: 12px; overflow: hidden; }
+.card-header { border-radius: 12px 12px 0 0 !important; }
+.bg-gradient-primary { background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%); }
+.form-control-lg, .form-select-lg { padding: 0.75rem 1rem; font-size: 1rem; border-radius: 8px; border: 1px solid #dee2e6; transition: all 0.3s ease; }
+.form-control-lg:focus, .form-select-lg:focus { border-color: #0d6efd; box-shadow: 0 0 0 0.2rem rgba(13,110,253,0.15); }
+.table tbody tr:hover { background-color: #f8f9fa; }
+.dataTables_filter { display: none; }
+.dataTables_paginate { margin-top: 10px; }
+</style>
+
+<!-- DataTables CDN -->
+<link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+<!-- JavaScript -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Bootstrap tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Initialize DataTable
+    const table = $('#schoolDataTable').DataTable({
+        paging: true,
+        ordering: true,
+        info: true,
+        pageLength: 5,
+        lengthChange: false
+    });
+
+    // Custom search box
+    const searchInput = document.getElementById("schoolSearch");
+    searchInput.addEventListener("keyup", function() {
+        table.search(this.value).draw();
+    });
+});
+</script>
+
+{% endblock %}

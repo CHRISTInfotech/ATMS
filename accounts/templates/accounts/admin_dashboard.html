@@ -1,0 +1,206 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<style>
+.dashboard-container { background: #f8f9fa; min-height: 100vh; padding: 2rem 0; }
+.page-header { background: #ffffff; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; border: 1px solid #e0e0e0; }
+.page-header h2 { color: #2d3748; font-weight: 600; font-size: 1.75rem; margin: 0 0 0.5rem 0; }
+.page-header p { color: #718096; margin: 0; font-size: 1rem; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+.stat-card { background: #ffffff; border-radius: 8px; padding: 1.5rem; border: 1px solid #e0e0e0; transition: transform 0.2s ease; }
+.stat-card:hover { transform: translateY(-2px); }
+.stat-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.stat-card-title { color: #718096; font-size: 0.875rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin: 0; }
+.stat-card-icon { width: 48px; height: 48px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+.icon-primary { background: #e3f2fd; color: #0d6efd; }
+.icon-success { background: #d1f2eb; color: #48bb78; }
+.icon-warning { background: #fff3cd; color: #f59e0b; }
+.icon-info { background: #e0e7ff; color: #6366f1; }
+.stat-card-value { font-size: 2rem; font-weight: 700; color: #2d3748; margin: 0; }
+.stat-card-change { color: #48bb78; font-size: 0.875rem; margin-top: 0.5rem; }
+.stat-card-change.negative { color: #f56565; }
+
+.management-section { margin-bottom: 2rem; }
+.section-title { color: #2d3748; font-weight: 600; font-size: 1.25rem; margin-bottom: 1.5rem; }
+.management-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+.management-card { background: #ffffff; border-radius: 8px; padding: 1.5rem; border: 1px solid #e0e0e0; transition: all 0.2s ease; text-decoration: none; color: inherit; display: block; }
+.management-card:hover { transform: translateY(-4px); border-color: #0d6efd; text-decoration: none; }
+.management-card-header { display: flex; align-items: center; margin-bottom: 1rem; }
+.management-card-icon { width: 56px; height: 56px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; margin-right: 1rem; }
+.management-card-title { font-size: 1.25rem; font-weight: 600; color: #2d3748; margin: 0; }
+.management-card-description { color: #718096; font-size: 0.95rem; margin-bottom: 1rem; line-height: 1.5; }
+.management-card-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 1rem; border-top: 1px solid #e9ecef; }
+.management-card-stats { font-size: 0.875rem; color: #718096; }
+.management-card-stats strong { color: #2d3748; font-weight: 600; }
+.management-card-link { color: #0d6efd; font-size: 0.875rem; font-weight: 500; display: flex; align-items: center; gap: 0.25rem; }
+
+.graphs-section { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+.graph-card { background: #ffffff; border-radius: 8px; padding: 1.5rem; border: 1px solid #e0e0e0; }
+.graph-card h5 { font-weight: 600; margin-bottom: 1rem; color: #2d3748; }
+</style>
+
+<div class="dashboard-container">
+    <div class="container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h2><i class="fa fa-dashboard me-2"></i>Admin Dashboard</h2>
+            <p>Overview of your institution's management system</p>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <h6 class="stat-card-title">Total Campuses</h6>
+                    <div class="stat-card-icon icon-primary"><i class="fa fa-university"></i></div>
+                </div>
+                <h2 class="stat-card-value">{{ total_campuses|default:0 }}</h2>
+                <p class="stat-card-change"><i class="fa fa-building me-1"></i>Across all locations</p>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <h6 class="stat-card-title">Total Schools</h6>
+                    <div class="stat-card-icon icon-success"><i class="fa fa-school"></i></div>
+                </div>
+                <h2 class="stat-card-value">{{ total_schools|default:0 }}</h2>
+                <p class="stat-card-change"><i class="fa fa-graduation-cap me-1"></i>Active schools</p>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <h6 class="stat-card-title">Total Departments</h6>
+                    <div class="stat-card-icon icon-warning"><i class="fa fa-sitemap"></i></div>
+                </div>
+                <h2 class="stat-card-value">{{ total_departments|default:0 }}</h2>
+                <p class="stat-card-change"><i class="fa fa-briefcase me-1"></i>Academic units</p>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <h6 class="stat-card-title">Total Users</h6>
+                    <div class="stat-card-icon icon-info"><i class="fa fa-users"></i></div>
+                </div>
+                <h2 class="stat-card-value">{{ total_users|default:0 }}</h2>
+                <p class="stat-card-change"><i class="fa fa-user-check me-1"></i>Registered users</p>
+            </div>
+        </div>
+
+        <!-- Graphs Section -->
+        <div class="graphs-section">
+            <div class="graph-card">
+                <h5>Schools per Campus</h5>
+                <canvas id="campusSchoolChart"></canvas>
+            </div>
+            <div class="graph-card">
+                <h5>Departments per School</h5>
+                <canvas id="schoolDeptChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Management Cards -->
+        <div class="management-section">
+            <h3 class="section-title">Institution Overview</h3>
+            <div class="management-grid">
+                <!-- Campus Management -->
+                <a href="{% url 'accounts:campus_crud' %}" class="management-card">
+                    <div class="management-card-header">
+                        <div class="management-card-icon icon-primary"><i class="fa fa-university"></i></div>
+                        <h4 class="management-card-title">Campus Management</h4>
+                    </div>
+                    <p class="management-card-description">View, add, edit, and manage all campus locations across your institution.</p>
+                    <div class="management-card-footer">
+                        <span class="management-card-stats"><strong>{{ total_campuses|default:0 }}</strong> Campuses</span>
+                        <span class="management-card-link">Manage <i class="fa fa-arrow-right"></i></span>
+                    </div>
+                </a>
+                <!-- School Management -->
+                <a href="{% url 'accounts:school_crud' %}" class="management-card">
+                    <div class="management-card-header">
+                        <div class="management-card-icon icon-success"><i class="fa fa-school"></i></div>
+                        <h4 class="management-card-title">School Management</h4>
+                    </div>
+                    <p class="management-card-description">Organize and manage schools within campuses, create and assign schools.</p>
+                    <div class="management-card-footer">
+                        <span class="management-card-stats"><strong>{{ total_schools|default:0 }}</strong> Schools</span>
+                        <span class="management-card-link">Manage <i class="fa fa-arrow-right"></i></span>
+                    </div>
+                </a>
+                <!-- Department Management -->
+                <a href="{% url 'accounts:department_crud' %}" class="management-card">
+                    <div class="management-card-header">
+                        <div class="management-card-icon icon-warning"><i class="fa fa-sitemap"></i></div>
+                        <h4 class="management-card-title">Department Management</h4>
+                    </div>
+                    <p class="management-card-description">Create and manage academic departments and organize institutional structure.</p>
+                    <div class="management-card-footer">
+                        <span class="management-card-stats"><strong>{{ total_departments|default:0 }}</strong> Departments</span>
+                        <span class="management-card-link">Manage <i class="fa fa-arrow-right"></i></span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Schools per Campus
+    const campusSchoolCtx = document.getElementById('campusSchoolChart').getContext('2d');
+    const campusSchoolChart = new Chart(campusSchoolCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ campus_names|safe }},
+            datasets: [{
+                label: 'Schools',
+                data: {{ campus_school_counts|safe }},
+                backgroundColor: 'rgba(13,110,253,0.7)'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { 
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1,
+                        callback: function(value) { return Number(value).toFixed(0); } // integer only
+                    }
+                }
+            }
+        }
+    });
+
+    // Departments per School
+    const schoolDeptCtx = document.getElementById('schoolDeptChart').getContext('2d');
+    const schoolDeptChart = new Chart(schoolDeptCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ school_names|safe }},
+            datasets: [{
+                label: 'Departments',
+                data: {{ school_department_counts|safe }},
+                backgroundColor: 'rgba(72,187,120,0.7)'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { 
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1,
+                        callback: function(value) { return Number(value).toFixed(0); } // integer only
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+
+{% endblock %}

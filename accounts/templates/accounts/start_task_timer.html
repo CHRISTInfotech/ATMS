@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Start Task Timer</h2>
+    <p>Task: <strong>{{ task.title }}</strong></p>
+    <p>Description: {{ task.description }}</p>
+    <form method="post" action="{% url 'accounts:start_task_timer' task.id %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">Start Timer</button>
+        <a href="{% url 'accounts:student_dashboard' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

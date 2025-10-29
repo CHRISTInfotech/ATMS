@@ -1,0 +1,29 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Account Settings{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-4">Account Settings</h2>
+  <p class="mb-4">Here you can manage institutions and departments.</p>
+
+  <div class="d-flex flex-wrap gap-3">
+
+    <!-- Manage Campus -->
+    <a href="{% url 'accounts:campus_crud' %}" class="btn btn-primary btn-lg">
+      <i class="fas fa-university me-2"></i> Manage Campus
+    </a>
+
+    <!-- Manage School -->
+    <a href="{% url 'accounts:school_crud' %}" class="btn btn-success btn-lg">
+      <i class="fas fa-school me-2"></i> Manage School
+    </a>
+
+    <!-- Manage Department -->
+    <a href="{% url 'accounts:department_crud' %}" class="btn btn-warning btn-lg text-white">
+      <i class="fas fa-building me-2"></i> Department Management
+    </a>
+
+  </div>
+</div>
+{% endblock %}

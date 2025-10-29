@@ -1,0 +1,797 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Board - {{ current_project.name|default:"Projects" }}{% endblock %}
+
+{% block content %}
+<style>
+:root {
+    --jira-blue: #0052cc;
+    --jira-blue-light: #deebff;
+    --jira-gray-100: #f4f5f7;
+    --jira-gray-200: #ebecf0;
+    --jira-gray-300: #dfe1e6;
+    --jira-gray-700: #5e6c84;
+    --jira-gray-900: #172b4d;
+    --shadow-sm: 0 1px 2px rgba(9,30,66,0.25);
+    --shadow-md: 0 4px 8px rgba(9,30,66,0.15);
+}
+
+body {
+    background-color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+}
+
+/* Header Section */
+.board-header {
+    background-color: #fff;
+    border-bottom: 2px solid var(--jira-gray-200);
+    padding: 16px 24px;
+    margin-bottom: 0;
+}
+
+.project-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--jira-gray-700);
+    margin-bottom: 12px;
+}
+
+.project-breadcrumb .separator {
+    color: var(--jira-gray-300);
+}
+
+.project-name {
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--jira-gray-900);
+    margin: 0;
+}
+
+/* Navigation Tabs - Jira Style */
+.board-nav {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--jira-gray-200);
+    padding: 0 24px;
+    background-color: #fff;
+    margin-bottom: 16px;
+}
+
+.board-nav-item {
+    padding: 12px 16px;
+    color: var(--jira-gray-700);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s;
+}
+
+.board-nav-item:hover {
+    color: var(--jira-blue);
+    background-color: var(--jira-gray-100);
+}
+
+.board-nav-item.active {
+    color: var(--jira-blue);
+    border-bottom-color: var(--jira-blue);
+}
+
+/* Toolbar */
+.board-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    background-color: #fff;
+    gap: 12px;
+}
+
+.search-wrapper {
+    position: relative;
+    flex: 0 0 300px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 8px 12px 8px 36px;
+    border: 2px solid var(--jira-gray-300);
+    border-radius: 3px;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--jira-blue);
+    box-shadow: 0 0 0 1px var(--jira-blue);
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--jira-gray-700);
+}
+
+.btn-create-task {
+    background-color: var(--jira-blue);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 3px;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-create-task:hover {
+    background-color: #0065ff;
+}
+
+/* Kanban Container */
+.kanban-wrapper {
+    padding: 0 24px 24px;
+    overflow-x: auto;
+}
+
+.kanban-container {
+    display: flex;
+    gap: 16px;
+    min-height: calc(100vh - 300px);
+    padding-bottom: 16px;
+}
+
+/* Column Styles */
+.kanban-column {
+    background-color: var(--jira-gray-100);
+    border-radius: 3px;
+    flex: 0 0 280px;
+    max-height: calc(100vh - 250px);
+    display: flex;
+    flex-direction: column;
+}
+
+.column-header {
+    padding: 12px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--jira-gray-700);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.task-count {
+    background-color: var(--jira-gray-300);
+    color: var(--jira-gray-700);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.task-list {
+    padding: 8px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Task Card - Jira Style */
+.task-card {
+    background-color: #fff;
+    border-radius: 3px;
+    padding: 12px;
+    margin-bottom: 8px;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+}
+
+.task-card:hover {
+    box-shadow: var(--shadow-md);
+    background-color: var(--jira-gray-100);
+}
+
+.task-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.task-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--jira-gray-900);
+    line-height: 1.4;
+    margin: 0;
+    flex: 1;
+}
+
+.task-dropdown-btn {
+    background: none;
+    border: none;
+    padding: 4px 8px;
+    color: var(--jira-gray-700);
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background-color 0.2s;
+}
+
+.task-dropdown-btn:hover {
+    background-color: var(--jira-gray-200);
+}
+
+.task-labels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.priority-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.priority-high {
+    background-color: #ffebe6;
+    color: #de350b;
+}
+
+.priority-medium {
+    background-color: #fff4e6;
+    color: #ff991f;
+}
+
+.priority-low {
+    background-color: #e3fcef;
+    color: #006644;
+}
+
+.task-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--jira-gray-200);
+}
+
+.task-meta-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--jira-gray-700);
+}
+
+.task-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: var(--jira-blue);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.task-due-date {
+    font-size: 11px;
+    color: #de350b;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Subtasks */
+.subtask-container {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--jira-gray-200);
+}
+
+.subtask-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 12px;
+    color: var(--jira-gray-700);
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border-radius: 3px;
+    padding: 4px 8px;
+    margin: 2px 0;
+}
+
+.subtask-item:hover {
+    background-color: var(--jira-gray-100);
+}
+
+.subtask-status-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+}
+
+.subtask-status-todo {
+    background-color: var(--jira-gray-200);
+    color: var(--jira-gray-700);
+}
+
+.subtask-status-in_progress {
+    background-color: var(--jira-blue-light);
+    color: var(--jira-blue);
+}
+
+.subtask-status-in_review {
+    background-color: #fff4e6;
+    color: #ff991f;
+}
+
+.subtask-status-done {
+    background-color: #e3fcef;
+    color: #006644;
+}
+
+.subtask-title {
+    flex: 1;
+    font-size: 12px;
+}
+
+.subtask-date {
+    font-size: 11px;
+    color: var(--jira-gray-700);
+}
+
+/* Comments */
+.comment-section {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--jira-gray-200);
+}
+
+.comment-item {
+    font-size: 11px;
+    color: var(--jira-gray-700);
+    padding: 4px 0;
+}
+
+.comment-author {
+    font-weight: 600;
+    color: var(--jira-gray-900);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 24px;
+    color: var(--jira-gray-700);
+    font-size: 13px;
+}
+
+/* Modal Improvements */
+.modal-content {
+    border-radius: 3px;
+    border: none;
+    box-shadow: 0 8px 16px rgba(9,30,66,0.25);
+}
+
+.modal-header {
+    border-bottom: 2px solid var(--jira-gray-200);
+    padding: 16px 24px;
+}
+
+.modal-title {
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--jira-gray-900);
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.form-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--jira-gray-700);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.form-control, .form-select {
+    border: 2px solid var(--jira-gray-300);
+    border-radius: 3px;
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--jira-blue);
+    box-shadow: 0 0 0 1px var(--jira-blue);
+}
+
+.btn-primary {
+    background-color: var(--jira-blue);
+    border: none;
+    border-radius: 3px;
+    padding: 8px 16px;
+    font-weight: 500;
+}
+
+.btn-primary:hover {
+    background-color: #0065ff;
+}
+
+.btn-success {
+    background-color: #006644;
+    border: none;
+    border-radius: 3px;
+    padding: 8px 16px;
+    font-weight: 500;
+}
+
+.btn-success:hover {
+    background-color: #00875a;
+}
+
+/* Scrollbar Styling */
+.task-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.task-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.task-list::-webkit-scrollbar-thumb {
+    background: var(--jira-gray-300);
+    border-radius: 4px;
+}
+
+.task-list::-webkit-scrollbar-thumb:hover {
+    background: var(--jira-gray-700);
+}
+</style>
+
+<!-- Page Header -->
+<div class="d-flex align-items-center mb-4">
+    <h5 class="fw-bold mb-0 me-2">Project/Event</h5>
+    <i class="fas fa-chevron-right text-muted"></i>
+    <h5 class="fw-bold mb-0 ms-2 text-primary">
+        {% if current_project %}
+            {{ current_project.name }}
+        {% else %}
+            All Projects
+        {% endif %}
+    </h5>
+</div>
+
+<!-- Navigation Tabs -->
+<div class="board-nav">
+    {% if request.user.role == 'hod' %}
+    <a class="board-nav-item {% if request.resolver_match.url_name == 'hod_dashboard' %}active{% endif %}" 
+       href="{% url 'accounts:hod_dashboard' %}{% if current_project %}?project={{ current_project.id }}{% endif %}">
+        Summary
+    </a>
+    {% else %}
+    <a class="board-nav-item {% if request.resolver_match.url_name == 'staff_dashboard' %}active{% endif %}" 
+       href="{% url 'accounts:staff_dashboard' %}{% if current_project %}?project={{ current_project.id }}{% endif %}">
+        Summary
+    </a>
+    {% endif %}
+    <a class="board-nav-item {% if request.resolver_match.url_name == 'backlog_page' %}active{% endif %}" 
+       href="{% url 'accounts:backlog_page' %}{% if current_project %}?project={{ current_project.id }}{% endif %}">
+        Backlog
+    </a>
+    <a class="board-nav-item {% if request.resolver_match.url_name == 'board_page' %}active{% endif %}" 
+       href="{% url 'accounts:board_page' %}{% if current_project %}?project={{ current_project.id }}{% endif %}">
+        Board
+    </a>
+</div>
+
+<!-- Toolbar -->
+<div class="board-toolbar">
+    <div class="search-wrapper">
+        <i class="fas fa-search search-icon"></i>
+        <input type="search" class="search-input" placeholder="Search tasks..." id="boardSearch">
+    </div>
+    <button class="btn-create-task" data-bs-toggle="modal" data-bs-target="#createTaskModal">
+        <i class="fas fa-plus"></i>
+        <span>Create</span>
+    </button>
+</div>
+
+<!-- Kanban Board -->
+<div class="kanban-wrapper">
+    <div class="kanban-container">
+        {% for status, tasks_list in kanban_tasks.items %}
+        <div class="kanban-column">
+            <div class="column-header">
+                <span>{{ status|title|cut:"_" }}</span>
+                <span class="task-count">{{ tasks_list|length }}</span>
+            </div>
+            <div class="task-list">
+                {% for task in tasks_list %}
+                <div class="task-card">
+                    <div class="task-card-header">
+                        <h6 class="task-title">{{ task.title }}</h6>
+                        <div class="dropdown">
+                            <button class="task-dropdown-btn dropdown-toggle" type="button" 
+                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item open-task-modal" href="#" 
+                                       data-task-id="{{ task.id }}" 
+                                       data-bs-toggle="modal" 
+                                       data-bs-target="#taskModal">
+                                        <i class="fas fa-edit me-2"></i>Edit Task
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="task-labels">
+                        {% if task.priority == 'high' %}
+                            <span class="priority-badge priority-high">
+                                <i class="fas fa-arrow-up"></i> High
+                            </span>
+                        {% elif task.priority == 'medium' %}
+                            <span class="priority-badge priority-medium">
+                                <i class="fas fa-equals"></i> Medium
+                            </span>
+                        {% elif task.priority == 'low' %}
+                            <span class="priority-badge priority-low">
+                                <i class="fas fa-arrow-down"></i> Low
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Subtasks -->
+                    {% if task.subtask_set.all %}
+                    <div class="subtask-container">
+                        {% for subtask in task.subtask_set.all %}
+                        <div class="subtask-item"
+                             onclick="openSubtaskModal('{{ subtask.id }}', '{{ subtask.title|escapejs }}', '{{ subtask.description|escapejs }}', '{{ subtask.deadline|date:'Y-m-d' }}', '{{ subtask.status }}')">
+                            <div class="subtask-status-icon 
+                                {% if subtask.status == 'todo' %}subtask-status-todo
+                                {% elif subtask.status == 'in_progress' %}subtask-status-in_progress
+                                {% elif subtask.status == 'in_review' %}subtask-status-in_review
+                                {% elif subtask.status == 'done' %}subtask-status-done
+                                {% endif %}">
+                                {% if subtask.status == 'done' %}
+                                    <i class="fas fa-check"></i>
+                                {% else %}
+                                    <i class="fas fa-circle"></i>
+                                {% endif %}
+                            </div>
+                            <span class="subtask-title">{{ subtask.title }}</span>
+                            <span class="subtask-date">{{ subtask.deadline|date:"M d" }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Comments -->
+                    {% if task.comment_set.all %}
+                    <div class="comment-section">
+                        {% for comment in task.comment_set.all|slice:":2" %}
+                        <div class="comment-item">
+                            <span class="comment-author">{{ comment.user.username }}:</span>
+                            {{ comment.text|truncatewords:10 }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="task-meta">
+                        <div class="task-meta-left">
+                            <div class="task-avatar" title="{{ task.assigned_to.username }}">
+                                {{ task.assigned_to.username|slice:":2"|upper }}
+                            </div>
+                            {% if task.team %}
+                            <span title="Team: {{ task.team.name }}">
+                                <i class="fas fa-users"></i>
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div class="task-due-date" title="Due date">
+                            <i class="far fa-calendar"></i>
+                            {{ task.due_date|date:"M d" }}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="empty-state">
+                    <p>No tasks</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- TASK MODAL -->
+<div class="modal fade" id="taskModal" tabindex="-1" aria-labelledby="taskModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="taskModalLabel">Task Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+
+        <!-- ADD SUBTASK -->
+        <h6 class="mb-3">Add Subtask</h6>
+        <form id="subtaskForm" method="POST" action="{% url 'accounts:add_subtask' %}" class="mb-4">
+            {% csrf_token %}
+            <input type="hidden" name="task_id" id="subtask_task_id">
+            <div class="mb-3">
+                <label class="form-label">Title</label>
+                <input type="text" name="title" placeholder="Subtask title" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Deadline</label>
+                <input type="date" name="deadline" class="form-control">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Description</label>
+                <textarea name="description" placeholder="Add description..." class="form-control" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Add Subtask</button>
+        </form>
+
+        <hr class="my-4">
+
+        <!-- ADD COMMENT -->
+        <h6 class="mb-3">Add Comment</h6>
+        <form id="commentForm" method="POST">
+            {% csrf_token %}
+            <div class="mb-3">
+                <textarea name="comment" placeholder="Add a comment..." class="form-control" rows="3" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-success w-100">Add Comment</button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SUBTASK MODAL -->
+<div class="modal fade" id="subtaskModal" tabindex="-1" aria-labelledby="subtaskModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="subtaskModalLabel">Edit Subtask</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="editSubtaskForm" method="POST">
+            {% csrf_token %}
+            <input type="hidden" id="subtask_id" name="subtask_id">
+            <input type="hidden" id="original_title" name="original_title">
+            <input type="hidden" id="original_description" name="original_description">
+            <input type="hidden" id="original_deadline" name="original_deadline">
+            <input type="hidden" id="original_status" name="original_status">
+
+            <div class="mb-3">
+                <label class="form-label">Title</label>
+                <input type="text" name="title" id="subtask_title" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Description</label>
+                <textarea name="description" id="subtask_description" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Deadline</label>
+                <input type="date" name="deadline" id="subtask_deadline" class="form-control">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Status</label>
+                <select name="status" id="subtask_status" class="form-select" required>
+                    <option value="todo">To Do</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="in_review">In Review</option>
+                    <option value="done">Done</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Update Subtask</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Open task modal
+document.querySelectorAll('.open-task-modal').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const taskId = this.dataset.taskId;
+        document.getElementById('subtask_task_id').value = taskId;
+        document.getElementById('commentForm').action = `/accounts/task/${taskId}/add_comment/`;
+    });
+});
+
+// Open subtask modal
+function openSubtaskModal(id, title, description, deadline, status) {
+    const modal = new bootstrap.Modal(document.getElementById('subtaskModal'));
+    modal.show();
+
+    document.getElementById('subtask_id').value = id;
+    document.getElementById('original_title').value = title;
+    document.getElementById('original_description').value = description;
+    document.getElementById('original_deadline').value = deadline;
+    document.getElementById('original_status').value = status;
+
+    document.getElementById('subtask_title').value = title;
+    document.getElementById('subtask_description').value = description;
+    document.getElementById('subtask_deadline').value = deadline;
+    document.getElementById('subtask_status').value = status;
+
+    document.getElementById('editSubtaskForm').action = `/accounts/subtask/${id}/edit/`;
+}
+
+// Handle subtask form submission
+document.getElementById('editSubtaskForm').addEventListener('submit', function(e) {
+    const fields = [
+        { current: 'subtask_title', original: 'original_title' },
+        { current: 'subtask_description', original: 'original_description' },
+        { current: 'subtask_deadline', original: 'original_deadline' },
+        { current: 'subtask_status', original: 'original_status' }
+    ];
+
+    fields.forEach(field => {
+        const currentField = document.getElementById(field.current);
+        if (!currentField.value || currentField.value.trim() === '') {
+            currentField.value = document.getElementById(field.original).value;
+        }
+    });
+});
+
+// Search functionality
+const searchInput = document.getElementById('boardSearch');
+searchInput.addEventListener('input', function() {
+    const query = this.value.toLowerCase();
+    const tasks = document.querySelectorAll('.task-card');
+
+    tasks.forEach(task => {
+        const title = task.querySelector('.task-title').innerText.toLowerCase();
+        const shouldShow = title.includes(query);
+        task.style.display = shouldShow ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}

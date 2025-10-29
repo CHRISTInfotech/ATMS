@@ -1,0 +1,61 @@
+{% extends 'hod_base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h3>Edit Task</h3>
+
+    <!-- Messages -->
+    {% if messages %}
+        <div class="mt-2">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="POST">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">Task Name</label>
+            <input type="text" name="task_name" class="form-control" value="{{ task.title }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea name="task_description" class="form-control">{{ task.description }}</textarea>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Deadline</label>
+            <input type="date" name="deadline" class="form-control" value="{{ task.due_date|date:'Y-m-d' }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Assign Staff</label>
+            <select name="assigned_staff" class="form-select" required>
+                <option value="">Select Staff</option>
+                {% for s in staff %}
+                    <option value="{{ s.id }}" {% if task.assigned_to.id == s.id %}selected{% endif %}>
+                        {{ s.username }}{% if s.department.all %} - {{ s.department.all|join:", " }}{% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Status</label>
+            <select name="status" class="form-select" required>
+                <option value="to_do" {% if task.status == "to_do" %}selected{% endif %}>To Do</option>
+                <option value="in_progress" {% if task.status == "in_progress" %}selected{% endif %}>In Progress</option>
+                <option value="in_review" {% if task.status == "in_review" %}selected{% endif %}>In Review</option>
+                <option value="done" {% if task.status == "done" %}selected{% endif %}>Done</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-success">Update Task</button>
+    </form>
+</div>
+{% endblock %}

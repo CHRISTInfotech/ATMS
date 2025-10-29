@@ -1,0 +1,48 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Settings</h2>
+    <div class="row">
+
+        <!-- Campus Management -->
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-university fa-3x mb-3 text-primary"></i>
+                    <h5 class="card-title"></h5>
+                    <p class="card-text">Add, edit, and manage campuses.</p>
+                    <a href="{% url 'accounts:campus_crud' %}" class="btn btn-primary">Go</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- School Management -->
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-school fa-3x mb-3 text-success"></i>
+                    <h5 class="card-title">Manage School</h5>
+                    <p class="card-text">Add, edit, and manage schools.</p>
+                    <a href="{% url 'accounts:school_crud' %}" class="btn btn-success">Go</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Department Management -->
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-building fa-3x mb-3 text-warning"></i>
+                    <h5 class="card-title">Manage Department</h5>
+                    <p class="card-text">Add, edit, and manage departments.</p>
+                    <a href="{% url 'accounts:department_crud' %}" class="btn btn-warning">Go</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

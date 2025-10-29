@@ -1,0 +1,630 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+{% load time_extras %}
+
+{% block title %}Summary{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --jira-blue: #0052cc;
+        --jira-blue-light: #deebff;
+        --jira-gray-100: #f4f5f7;
+        --jira-gray-200: #ebecf0;
+        --jira-gray-300: #dfe1e6;
+        --jira-gray-700: #5e6c84;
+        --jira-gray-900: #172b4d;
+    }
+
+    body {
+        background-color: #fff;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    }
+
+    /* Header Section - Matching Board/Backlog */
+    .summary-header {
+        background-color: #fff;
+        border-bottom: 2px solid var(--jira-gray-200);
+        padding: 16px 24px;
+        margin-bottom: 0;
+    }
+
+    .project-breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: var(--jira-gray-700);
+        margin-bottom: 12px;
+    }
+
+    .project-breadcrumb .separator {
+        color: var(--jira-gray-300);
+    }
+
+    .project-name {
+        font-size: 24px;
+        font-weight: 500;
+        color: var(--jira-gray-900);
+        margin: 0;
+    }
+
+    /* Navigation Tabs - Matching Board/Backlog */
+    .summary-nav {
+        display: flex;
+        gap: 0;
+        border-bottom: 2px solid var(--jira-gray-200);
+        padding: 0 24px;
+        background-color: #fff;
+        margin-bottom: 24px;
+    }
+
+    .summary-nav-item {
+        padding: 12px 16px;
+        color: var(--jira-gray-700);
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+        transition: all 0.2s;
+    }
+
+    .summary-nav-item:hover {
+        color: var(--jira-blue);
+        background-color: var(--jira-gray-100);
+    }
+
+    .summary-nav-item.active {
+        color: var(--jira-blue);
+        border-bottom-color: var(--jira-blue);
+    }
+
+    /* Content Padding */
+    .summary-content {
+        padding: 0 24px 24px;
+    }
+
+    /* Enhanced Task Card Styles */
+    .task-card {
+        border-left: 4px solid #dee2e6;
+        transition: all 0.3s ease;
+        background: #fff;
+    }
+    
+    .task-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+    }
+    
+    .task-card.todo-card { border-left-color: #ffc107; }
+    .task-card.progress-card { border-left-color: #0d6efd; }
+    .task-card.done-card { border-left-color: #198754; }
+    
+    /* Modern Button Styles */
+    .task-action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 16px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        border-radius: 8px;
+        border: none;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        text-transform: none;
+        gap: 6px;
+        width: 100%;
+    }
+    
+    .task-action-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .task-action-btn:active {
+        transform: translateY(0);
+    }
+    
+    /* Specific Button Variants */
+    .btn-move-progress {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .btn-move-progress:hover {
+        background: linear-gradient(135deg, #5568d3 0%, #63408a 100%);
+        color: white;
+    }
+    
+    .btn-move-todo {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+    }
+    
+    .btn-move-todo:hover {
+        background: linear-gradient(135deg, #e082ea 0%, #e4465b 100%);
+        color: white;
+    }
+    
+    .btn-move-done {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+    }
+    
+    .btn-move-done:hover {
+        background: linear-gradient(135deg, #3e9bed 0%, #00e1ed 100%);
+        color: white;
+    }
+    
+    .btn-back-progress {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        color: white;
+    }
+    
+    .btn-back-progress:hover {
+        background: linear-gradient(135deg, #e95f89 0%, #edd02f 100%);
+        color: white;
+    }
+    
+    /* Button Icons */
+    .task-action-btn i {
+        font-size: 1rem;
+    }
+    
+    /* Action Buttons Container */
+    .task-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid #e9ecef;
+    }
+    
+    /* Task Info Styles */
+    .task-info {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin: 8px 0;
+    }
+    
+    .task-info strong {
+        color: #495057;
+    }
+    
+    /* Column Headers */
+    .kanban-column-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 16px;
+        padding: 14px 12px;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        border-radius: 8px;
+        font-weight: 600;
+        min-height: 50px;
+        height: 50px;
+        font-size: 1rem;
+    }
+
+    .kanban-column-header.todo { 
+        background: linear-gradient(135deg, #ffe07b 0%, #ffad14 100%); 
+        color: white;
+    }
+
+    .kanban-column-header.progress { 
+        background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%); 
+        color: white; 
+    }
+
+    .kanban-column-header.done { 
+        background: linear-gradient(135deg, #55efc4 0%, #00b894 100%); 
+        color: white;
+    }
+
+    .kanban-column-header i {
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+
+    .kanban-column-header span {
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+</style>
+
+<!-- Page Header -->
+<div class="d-flex align-items-center mb-4">
+    <h5 class="fw-bold mb-0 me-2">Project/Event</h5>
+    <i class="fas fa-chevron-right text-muted"></i>
+    <h5 class="fw-bold mb-0 ms-2 text-primary">
+        {% if current_project %}
+            {{ current_project.name }}
+        {% else %}
+            All Projects
+        {% endif %}
+    </h5>
+</div>
+
+<!-- Navigation Tabs -->
+<div class="summary-nav">
+    {% if request.user.role == 'hod' %}
+    <a class="summary-nav-item {% if request.resolver_match.url_name == 'hod_dashboard' %}active{% endif %}" 
+       href="{% url 'accounts:hod_dashboard' %}?project={{ current_project.id }}">
+        Summary
+    </a>
+    {% else %}
+    <a class="summary-nav-item {% if request.resolver_match.url_name == 'staff_dashboard' %}active{% endif %}" 
+       href="{% url 'accounts:staff_dashboard' %}?project={{ current_project.id }}">
+        Summary
+    </a>
+    {% endif %}
+    <a class="summary-nav-item {% if active_tab == 'backlog' %}active{% endif %}" 
+       href="{% url 'accounts:backlog_page' %}{% if current_project %}?project={{ current_project.id }}{% endif %}">
+        Backlog
+    </a>
+    <a class="summary-nav-item {% if active_tab == 'board' %}active{% endif %}" 
+       href="{% url 'accounts:board_page' %}{% if current_project %}?project={{ current_project.id }}{% endif %}">
+        Board
+    </a>
+</div>
+
+<!-- Content -->
+<div class="summary-content">
+    <!-- Top Stats + Status Overview -->
+    <div class="row g-4 mb-4 align-items-stretch">
+        <!-- Stats Cards -->
+        <div class="col-lg-6 d-flex flex-column gap-2 h-100">
+            <!-- First Row: Completed, Updated, In Review -->
+            <div class="row g-2 mb-2">
+                <div class="col-4">
+                    <div class="card p-3 shadow-sm text-center h-100 d-flex flex-column justify-content-center">
+                        <i class="fas fa-clipboard-check fs-4 mb-1 text-success"></i>
+                        <h5 class="card-title text-success mb-1">{{ completed_count }} Completed</h5>
+                        <p class="card-text text-muted mb-0">in last 7 days</p>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card p-3 shadow-sm text-center h-100 d-flex flex-column justify-content-center">
+                        <i class="fas fa-sync fs-4 mb-1 text-primary"></i>
+                        <h5 class="card-title text-primary mb-1">{{ updated_count }} Updated</h5>
+                        <p class="card-text text-muted mb-0">in last 7 days</p>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card p-3 shadow-sm text-center h-100 d-flex flex-column justify-content-center">
+                        <i class="fas fa-eye fs-4 mb-1 text-warning"></i>
+                        <h5 class="card-title text-warning mb-1">{{ in_review_count|default:0 }} In Review</h5>
+                        <p class="card-text text-muted mb-0">awaiting review</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Second Row: In Progress, Created, Due Soon, Done -->
+            <div class="row g-2">
+                <div class="col-3">
+                    <div class="card p-3 shadow-sm text-center h-100 d-flex flex-column justify-content-center">
+                        <i class="fas fa-spinner fs-4 mb-1 text-info"></i>
+                        <h5 class="card-title text-info mb-1">{{ in_progress_count|default:0 }} In Progress</h5>
+                        <p class="card-text text-muted mb-0">currently ongoing</p>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="card p-3 shadow-sm text-center h-100 d-flex flex-column justify-content-center">
+                        <i class="fas fa-plus-circle fs-4 mb-1 text-warning"></i>
+                        <h5 class="card-title text-warning mb-1">{{ created_count|default:0 }} Created</h5>
+                        <p class="card-text text-muted mb-0">in last 7 days</p>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="card p-3 shadow-sm text-center h-100 d-flex flex-column justify-content-center">
+                        <i class="fas fa-calendar-times fs-4 mb-1 text-danger"></i>
+                        <h5 class="card-title text-danger mb-1">{{ due_soon_count|default:0 }} Due Soon</h5>
+                        <p class="card-text text-muted mb-0">in next 7 days</p>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="card p-3 shadow-sm text-center h-100 d-flex flex-column justify-content-center">
+                        <i class="fas fa-check-circle fs-4 mb-1 text-success"></i>
+                        <h5 class="card-title text-success mb-1">{{ done_count|default:0 }} Done</h5>
+                        <p class="card-text text-muted mb-0">completed tasks</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Chart -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex flex-column align-items-center justify-content-center">
+                    <h5 class="card-title mb-1"><i class="fas fa-tachometer-alt me-1"></i>Status Overview</h5>
+                    <!-- Chart Canvas -->
+                    <canvas id="statusChart" style="max-width:200px; max-height:120px;"></canvas>
+                    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+                    <script>
+                        var ctx = document.getElementById('statusChart').getContext('2d');
+                        new Chart(ctx, {
+                            type: 'doughnut',
+                            data: {
+                                labels: ['To Do', 'In Progress', 'In Review', 'Done'],
+                                datasets: [{
+                                    data: [
+                                        {{ todo_count|default:0 }},
+                                        {{ in_progress_count|default:0 }},
+                                        {{ in_review_count|default:0 }},
+                                        {{ done_count|default:0 }}
+                                    ],
+                                    backgroundColor: [
+                                        '#6c757d',  // Grey for To Do
+                                        '#0d6efd',  // Blue for In Progress
+                                        '#ffc107',  // Yellow for In Review
+                                        '#198754'   // Green for Done
+                                    ]
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                plugins: {
+                                    legend: { display: false }
+                                },
+                                maintainAspectRatio: false
+                            }
+                        });
+                    </script>
+
+                    <!-- Status Badges -->
+                    <div class="mt-3 text-center d-flex justify-content-center gap-3 flex-wrap">
+                        <span class="badge bg-secondary">To Do: {{ todo_count|default:0 }}</span>
+                        <span class="badge bg-primary">In Progress: {{ in_progress_count|default:0 }}</span>
+                        <span class="badge bg-warning text-dark">In Review: {{ in_review_count|default:0 }}</span>
+                        <span class="badge bg-success">Done: {{ done_count|default:0 }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    
+    <!-- Kanban Tasks -->
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-tasks me-1"></i>Tasks</h5>
+                    <hr>
+                    <div class="row">
+
+                        <!-- To Do Column -->
+                        <div class="col-md-4">
+                            <div class="kanban-column-header todo">
+                                <i class="fas fa-list"></i>
+                                <span>To Do</span>
+                            </div>
+                            {% for task in kanban_tasks.to_do %}
+                                <div class="card mb-3 p-3 task-card todo-card">
+                                    <h6 class="fw-bold mb-2">{{ task.title }}</h6>
+                                    <p class="text-muted small mb-2">{{ task.description }}</p>
+                                    <p class="task-info mb-0">
+                                        <strong>Assigned to:</strong> 
+                                        {% if task.team %}{{ task.team.name }}{% endif %}
+                                        {% if task.assigned_to %} - {{ task.assigned_to.username }}{% endif %}
+                                        {% if not task.team and not task.assigned_to %}Unassigned{% endif %}
+                                    </p>
+
+                                    <div class="task-actions">
+                                        <form method="POST" action="{% url 'accounts:update_task_status' %}">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="task_id" value="{{ task.id }}">
+                                            <input type="hidden" name="new_status" value="in_progress">
+                                            <button type="submit" class="task-action-btn btn-move-progress">
+                                                <i class="fas fa-play"></i>
+                                                <span>Start Working</span>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <p class="text-muted text-center">No tasks</p>
+                            {% endfor %}
+                        </div>
+
+                        <!-- In Progress Column -->
+                        <div class="col-md-4">
+                            <div class="kanban-column-header progress">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <span>In Progress</span>
+                            </div>
+                            {% for task in kanban_tasks.in_progress %}
+                                <div class="card mb-3 p-3 task-card progress-card">
+                                    <h6 class="fw-bold mb-2">{{ task.title }}</h6>
+                                    <p class="text-muted small mb-2">{{ task.description }}</p>
+                                    <p class="task-info mb-0">
+                                        <strong>Assigned to:</strong> 
+                                        {% if task.team %}{{ task.team.name }}{% endif %}
+                                        {% if task.assigned_to %} - {{ task.assigned_to.username }}{% endif %}
+                                        {% if not task.team and not task.assigned_to %}Unassigned{% endif %}
+                                    </p>
+
+                                    <!-- Subtasks -->
+                                    {% if task.subtasks.all %}
+                                        <div class="mt-3 mb-2">
+                                            {% for subtask in task.subtasks.all %}
+                                                <div class="subtask d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded"
+                                                    id="subtask-{{ subtask.id }}"
+                                                    data-subtask-id="{{ subtask.id }}"
+                                                    data-task-id="{{ task.id }}"
+                                                    data-time-spent="{{ subtask.time_spent_seconds|default:0 }}">
+                                                    
+                                                    <div>
+                                                        <strong class="small">{{ subtask.title }}</strong><br>
+                                                        <span class="badge bg-secondary" id="timer-{{ subtask.id }}">{{ subtask.time_spent_seconds|format_duration }}</span>
+                                                    </div>
+                                                    
+                                                    <div>
+                                                        <button class="btn btn-sm btn-success" id="start-{{ subtask.id }}" 
+                                                            onclick="startTimer({{ subtask.id }}, {{ subtask.time_spent_seconds|default:0 }})">
+                                                            <i class="fas fa-play"></i>
+                                                        </button>
+                                                        <button class="btn btn-sm btn-danger" id="stop-{{ subtask.id }}" 
+                                                            onclick="stopTimer({{ subtask.id }})" disabled>
+                                                            <i class="fas fa-stop"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+
+                                    <div class="task-actions">
+                                        <form method="POST" action="{% url 'accounts:update_task_status' %}">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="task_id" value="{{ task.id }}">
+                                            <input type="hidden" name="new_status" value="to_do">
+                                            <button type="submit" class="task-action-btn btn-move-todo">
+                                                <i class="fas fa-undo"></i>
+                                                <span>Move Back</span>
+                                            </button>
+                                        </form>
+                                        <form method="POST" action="{% url 'accounts:update_task_status' %}">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="task_id" value="{{ task.id }}">
+                                            <input type="hidden" name="new_status" value="done">
+                                            <button type="submit" class="task-action-btn btn-move-done">
+                                                <i class="fas fa-check"></i>
+                                                <span>Mark Complete</span>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <p class="text-muted text-center">No tasks</p>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Done Column -->
+                        <div class="col-md-4">
+                            <div class="kanban-column-header done">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Done</span>
+                            </div>
+                            {% for task in kanban_tasks.done %}
+                                <div class="card mb-3 p-3 task-card done-card">
+                                    <h6 class="fw-bold mb-2">{{ task.title }}</h6>
+                                    <p class="text-muted small mb-2">{{ task.description }}</p>
+                                    <p class="task-info mb-1">
+                                        <strong>Assigned to:</strong> 
+                                        {% if task.team %}{{ task.team.name }}{% endif %}
+                                        {% if task.assigned_to %} - {{ task.assigned_to.username }}{% endif %}
+                                        {% if not task.team and not task.assigned_to %}Unassigned{% endif %}
+                                    </p>
+                                    <p class="task-info mb-0">
+                                        <strong>Total Time:</strong> 
+                                        <span class="badge bg-success">{{ task.total_time|format_duration }}</span>
+                                    </p>
+
+                                    <div class="task-actions">
+                                        <form method="POST" action="{% url 'accounts:update_task_status' %}">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="task_id" value="{{ task.id }}">
+                                            <input type="hidden" name="new_status" value="in_progress">
+                                            <button type="submit" class="task-action-btn btn-back-progress">
+                                                <i class="fas fa-arrow-left"></i>
+                                                <span>Reopen Task</span>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <p class="text-muted text-center">No tasks</p>
+                            {% endfor %}
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+const subtaskTimers = {};  // store interval IDs
+
+function startTimer(subtaskId, initialSeconds) {
+    const startBtn = document.getElementById(`start-${subtaskId}`);
+    const stopBtn = document.getElementById(`stop-${subtaskId}`);
+    const timerEl = document.getElementById(`timer-${subtaskId}`);
+    let seconds = parseInt(initialSeconds);
+
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+
+    subtaskTimers[subtaskId] = setInterval(() => {
+        seconds++;
+        timerEl.innerText = formatDuration(seconds);
+
+        // Update parent task total time
+        updateTaskTotal(timerEl.closest('.card'));
+    }, 1000);
+}
+
+function stopTimer(subtaskId) {
+    const startBtn = document.getElementById(`start-${subtaskId}`);
+    const stopBtn = document.getElementById(`stop-${subtaskId}`);
+
+    clearInterval(subtaskTimers[subtaskId]);
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+}
+
+// Format seconds to d h m s
+function formatDuration(totalSeconds) {
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if(days>0) return `${days}d ${hours}h`;
+    if(hours>0) return `${hours}h ${minutes}m`;
+    if(minutes>0) return `${minutes}m ${seconds}s`;
+    return `${seconds}s`;
+}
+
+// Update parent task total time dynamically
+function updateTaskTotal(cardEl) {
+    const taskId = cardEl.querySelector('input[name="task_id"]').value;
+    let total = 0;
+
+    cardEl.querySelectorAll('.subtask').forEach(sub => {
+        const timeStr = sub.querySelector('span').innerText;
+        total += parseDurationToSeconds(timeStr);
+    });
+
+    const totalEl = document.getElementById(`task-total-${taskId}`);
+    if(totalEl) {
+        totalEl.innerText = formatDuration(total);
+    }
+}
+
+// Convert formatted duration string to seconds
+function parseDurationToSeconds(str) {
+    let total = 0;
+    const dMatch = str.match(/(\d+)d/);
+    const hMatch = str.match(/(\d+)h/);
+    const mMatch = str.match(/(\d+)m/);
+    const sMatch = str.match(/(\d+)s/);
+
+    if(dMatch) total += parseInt(dMatch[1])*86400;
+    if(hMatch) total += parseInt(hMatch[1])*3600;
+    if(mMatch) total += parseInt(mMatch[1])*60;
+    if(sMatch) total += parseInt(sMatch[1]);
+
+    return total;
+}
+</script>
+{% endblock %}
