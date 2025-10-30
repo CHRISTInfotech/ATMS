@@ -2217,9 +2217,9 @@ def email_not_registered(request):
 
 
 
-def start_task_timer(request):
-    if request.method == "POST":
-        task_id = request.POST.get('task_id')
+def start_task_timer(request,id):
+   
+        task_id = id
         task = Task.objects.get(id=task_id)
 
         if task.status != 'in_progress':  # Only start if not already in progress
@@ -2229,13 +2229,13 @@ def start_task_timer(request):
 
         # Get the current URL and redirect back to it
         project_id = request.GET.get('project')
-        return redirect(f'{request.path}?project={project_id}')  # Redirect back with project query param
+        return redirect("accounts:staff_dashboard")  # Redirect back with project query param
 
-    return redirect('accounts:staff_dashboard')  # Fallback
+    # return redirect('accounts:staff_dashboard')  # Fallback
 
-def stop_task_timer(request):
-    if request.method == "POST":
-        task_id = request.POST.get('task_id')
+def stop_task_timer(request,id):
+   
+        task_id = id
         try:
             task = Task.objects.get(id=task_id)
 
@@ -2270,9 +2270,9 @@ def stop_task_timer(request):
             messages.error(request, f"An error occurred: {e}")
 
         project_id = request.GET.get('project')
-        return redirect(f"{request.path}?project={project_id}")
+        return redirect("accounts:staff_dashboard")
 
-    return redirect("accounts:staff_dashboard")
+    # return redirect("accounts:staff_dashboard")
 @login_required
 def create_event(request):
     if request.user.role not in ['staff', 'hod', 'admin']:

@@ -27,8 +27,8 @@ urlpatterns = [
     # Task management (using query params for task_id)
     path('create_task/', views.create_task, name='create_task'),
     path('update_task_status/', views.update_task_status, name='update_task_status'),  # Without task_id in the path
-    path('task/start/', views.start_task_timer, name='start_task_timer'),  # Without task_id in the path
-    path('task/stop/', views.stop_task_timer, name='stop_task_timer'),  # Without task_id in the path
+    path('task/start/<str:id>', views.start_task_timer, name='start_task_timer'),  # Without task_id in the path
+    path('task/stop/<str:id>', views.stop_task_timer, name='stop_task_timer'),  # Without task_id in the path
 
     # Project management
     path('create-project/', views.create_project, name='create_project'),
