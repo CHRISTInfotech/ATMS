@@ -23,7 +23,7 @@ class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)
 
     USERNAME_FIELD = 'email'  # login using email
-    REQUIRED_FIELDS = []        # must NOT include 'email'
+    REQUIRED_FIELDS = ['username']        # must NOT include 'email'
 
     def __str__(self):
         return self.username
